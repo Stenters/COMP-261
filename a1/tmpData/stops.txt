@@ -1,0 +1,3 @@
+stop_id	stop_name	stop_lat	stop_lon
+OOBUS003	Casuarina Interchange	-12.37345	130.88048
+OOBUS004	Trower 004	-12.36928	130.88298

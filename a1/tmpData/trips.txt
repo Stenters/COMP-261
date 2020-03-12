@@ -1,0 +1,2 @@
+trip_id	stop_sequence
+i1_1	OOBUS003	OOBUS004
