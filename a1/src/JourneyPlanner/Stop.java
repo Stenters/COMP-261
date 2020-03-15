@@ -22,25 +22,28 @@ public class Stop {
         this.location = loc;
         this.incoming = new ArrayList<Connection>();
         this.outgoing = new ArrayList<Connection>();
-        System.out.println("Creating a new stop at " + loc.x + ", " + loc.y);
-
+        System.out.println("Creating stop " + name);
     }
 
     public void draw(Graphics g, Location origin, double scale) {
-        double x = origin.x + location.x * scale , y = origin.y + location.y * scale;
+        Point loc = location.asPoint(origin, scale);
 
         if (isHighlighted) {
-            g.setColor(Color.YELLOW);
+            g.setColor(Color.GREEN);
 
         } else {
             g.setColor(Color.BLUE);
         }
 
-        g.drawOval((int) x, (int) y, CIRCLE_DIAMETER, CIRCLE_DIAMETER);
+        g.fillOval( loc.x, loc.y, CIRCLE_DIAMETER, CIRCLE_DIAMETER);
 
         for(Connection c : outgoing) {
             c.draw(g, origin, scale);
         }
+    }
+
+    public void move (double dx, double dy) {
+        location = location.moveBy(dx, dy);
     }
 
     public void addIncomingConnection(Connection c) {
@@ -63,11 +66,7 @@ public class Stop {
 
     public void setHighlight(boolean isHighlighted) {
         this.isHighlighted = isHighlighted;
-        if (isHighlighted) {
-            System.out.println(ID + " is now highlighted");
-        } else {
-            System.out.println(ID + " is no longer highlighted");
-        }
+
         for (Connection c : incoming) {
             c.getParent().highlight();
         } for (Connection c : outgoing) {

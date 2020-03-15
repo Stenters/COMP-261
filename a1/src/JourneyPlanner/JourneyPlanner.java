@@ -12,8 +12,8 @@ public class JourneyPlanner extends GUI {
     JourneyTrie stopTrie = new JourneyTrie();
     HashMap<String,Stop> stopHashMap = new HashMap<String, Stop>();
     JourneyQuad stopQuad = new JourneyQuad();
-    List<Stop> stopList = new ArrayList<Stop>(); // TODO: which data structure?
-    List<Trip> tripList = new ArrayList<Trip>();
+    List<Stop> stopList = new LinkedList<Stop>(); // TODO: which data structure?
+    List<Trip> tripList = new LinkedList<Trip>();
 
     public static int MOVE_FACTOR = 10, ZOOM_FACTOR = 2;
     private Location origin;
@@ -22,12 +22,6 @@ public class JourneyPlanner extends GUI {
     /** GUI Methods **/
     @Override
     protected void redraw(Graphics g) {
-        g.setColor(Color.BLACK);
-        g.drawOval( getDrawingAreaDimension().width / 2, getDrawingAreaDimension().height / 2, 10, 10);
-
-        if (stopList.size() > 1)
-            stopList.get(1).setHighlight(true);
-
         for (Stop s : stopList) {
             s.draw(g, origin, scale);
         }
@@ -37,7 +31,7 @@ public class JourneyPlanner extends GUI {
     protected void onClick(MouseEvent e) {
         Stop s = findNearestStop(e.getX(), e.getY());
         s.setHighlight(true);
-        // TODO: display info?
+        // TODO: display info
     }
 
     @Override
@@ -46,12 +40,6 @@ public class JourneyPlanner extends GUI {
         List<Stop> matchingStops = findMatchingRoutes(text);
         for (Stop s : matchingStops) {
             s.setHighlight(true);
-            for (Connection c : s.incoming) {
-                c.getParent().highlight();
-            }
-            for (Connection c : s.outgoing){
-                c.getParent().highlight();
-            }
         }
     }
 
@@ -60,21 +48,25 @@ public class JourneyPlanner extends GUI {
         double dY = 0, dX = 0;
         switch (m){
             case EAST:
-                dX = -1 * MOVE_FACTOR;
-                break;
-            case SOUTH:
-                dY = -1 * MOVE_FACTOR;
-                break;
-            case WEST:
                 dX = MOVE_FACTOR;
                 break;
-            case NORTH:
+            case SOUTH:
                 dY = MOVE_FACTOR;
+                break;
+            case WEST:
+                dX = -MOVE_FACTOR;
+                break;
+            case NORTH:
+                dY = -MOVE_FACTOR;
                 break;
             case ZOOM_IN:
                 scale *= ZOOM_FACTOR;
+                dX = (getDrawingAreaDimension().width - getDrawingAreaDimension().width / scale) / 2;
+                dY = (getDrawingAreaDimension().height - getDrawingAreaDimension().height / scale) / 2;
                 break;
             case ZOOM_OUT:
+                dX = (-1 * (getDrawingAreaDimension().width - getDrawingAreaDimension().width / scale)) / 4;
+                dY = (-1 * (getDrawingAreaDimension().height - getDrawingAreaDimension().height / scale)) / 4;
                 scale /= ZOOM_FACTOR;
                 break;
             default:
@@ -82,7 +74,14 @@ public class JourneyPlanner extends GUI {
                 break;
         }
 
-        origin = origin.moveBy(dX, dY);
+//        for (Stop s : stopList) {
+//            s.move(dX , dY );
+//        }
+        Point originPoint = origin.asPoint(origin, scale);
+        originPoint.x += dX;
+        originPoint.y += dY;
+        origin = Location.newFromPoint(originPoint, origin, scale);
+//        origin = origin.moveBy(dX, dY);
         redraw();
     }
 
@@ -95,6 +94,12 @@ public class JourneyPlanner extends GUI {
 
             stopList = new LinkedList<Stop>();
             tripList = new LinkedList<Trip>();
+
+            stopTrie = new JourneyTrie();
+            stopHashMap = new HashMap<String, Stop>();
+            stopQuad = new JourneyQuad();
+            stopList = new ArrayList<Stop>();
+            tripList = new ArrayList<Trip>();
 
             parseStopFile(stopReader);
             parseTripFile(tripReader);
@@ -116,6 +121,7 @@ public class JourneyPlanner extends GUI {
         for (Stop s : stopList) {
             double dist = s.getLocation().distance(click);
             if (dist < minDist) {
+                System.out.printf("%s is the new winner (dist %f)\n", s.getID(), dist);
                 minDist = dist;
                 winner = s;
             }
@@ -174,7 +180,6 @@ public class JourneyPlanner extends GUI {
     }
 
     private void populateDataStructures() {
-
         for (Stop s : stopList) {
             stopHashMap.put(s.getName(), s);
             // stopQuad.add(s); TODO
@@ -187,8 +192,7 @@ public class JourneyPlanner extends GUI {
     }
 
     public JourneyPlanner(){
-        Dimension d = getDrawingAreaDimension();
-        origin = new Location(d.width / 2.0, d.height / 2.0);
-        scale = 1;
+        origin = new Location(0, 0);
+        scale = 10;
     }
 }
