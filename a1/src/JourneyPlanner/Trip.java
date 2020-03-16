@@ -20,9 +20,13 @@ public class Trip {
         connections.add(c);
     }
 
-    public void highlight() {
+    public void setHighlight(boolean isHighlighted) {
         for (Connection c : connections) {
-            c.setHighlight(true);
+            c.setHighlight(isHighlighted);
         }
+    }
+
+    public String getID() {
+        return ID;
     }
 }

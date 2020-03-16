@@ -10,14 +10,13 @@ import java.util.stream.Collectors;
 public class JourneyPlanner extends GUI {
     /** Variables **/
     JourneyTrie stopTrie = new JourneyTrie();
-    HashMap<String,Stop> stopHashMap = new HashMap<String, Stop>();
     JourneyQuad stopQuad = new JourneyQuad();
-    List<Stop> stopList = new LinkedList<Stop>(); // TODO: which data structure?
+    List<Stop> stopList = new LinkedList<Stop>();
     List<Trip> tripList = new LinkedList<Trip>();
 
     public static int MOVE_FACTOR = 10, ZOOM_FACTOR = 2;
-    private Location origin;
-    private double scale;
+    private Location origin = new Location(0,0);
+    private double scale = 10;
 
     /** GUI Methods **/
     @Override
@@ -30,16 +29,26 @@ public class JourneyPlanner extends GUI {
     @Override
     protected void onClick(MouseEvent e) {
         Stop s = findNearestStop(e.getX(), e.getY());
+        unhighlight();
         s.setHighlight(true);
-        // TODO: display info
+        getTextOutputArea().setText("Stop " + s.getName() + "\nTRIPS:\n");
+        for (Trip t : s.getTrips()) {
+            getTextOutputArea().append(t.getID() + "\n");
+        }
     }
 
     @Override
     protected void onSearch() {
         String text = getSearchBox().getText();
+        unhighlight();
+
         List<Stop> matchingStops = findMatchingRoutes(text);
+        getTextOutputArea().setText(matchingStops.size() + " results found\n");
+
         for (Stop s : matchingStops) {
+            getTextOutputArea().append(s.getName() + "\n");
             s.setHighlight(true);
+            s.setTripHighlighted(true);
         }
     }
 
@@ -74,9 +83,6 @@ public class JourneyPlanner extends GUI {
                 break;
         }
 
-//        for (Stop s : stopList) {
-//            s.move(dX , dY );
-//        }
         Point originPoint = origin.asPoint(origin, scale);
         originPoint.x += dX;
         originPoint.y += dY;
@@ -96,7 +102,6 @@ public class JourneyPlanner extends GUI {
             tripList = new LinkedList<Trip>();
 
             stopTrie = new JourneyTrie();
-            stopHashMap = new HashMap<String, Stop>();
             stopQuad = new JourneyQuad();
             stopList = new ArrayList<Stop>();
             tripList = new ArrayList<Trip>();
@@ -113,15 +118,14 @@ public class JourneyPlanner extends GUI {
     /** Helper Methods **/
 
     private Stop findNearestStop(int x, int y) {
-        // TODO: implement Trie
-        Location click = new Location(x,y);
+        // TODO: implement quad
+        Point click = new Point(x, y);
         double minDist = Double.MAX_VALUE;
         Stop winner = null;
 
         for (Stop s : stopList) {
-            double dist = s.getLocation().distance(click);
+            double dist = s.getLocation().asPoint(origin, scale).distance(click);
             if (dist < minDist) {
-                System.out.printf("%s is the new winner (dist %f)\n", s.getID(), dist);
                 minDist = dist;
                 winner = s;
             }
@@ -132,6 +136,16 @@ public class JourneyPlanner extends GUI {
 
     private List<Stop> findMatchingRoutes(String text) {
         return stopTrie.allThatBeginWith(text);
+    }
+
+    private void unhighlight() {
+        for (Trip t : tripList) {
+            t.setHighlight(false);
+        }
+
+        for (Stop s : stopList) {
+            s.setHighlight(false);
+        }
     }
 
     private void parseStopFile(BufferedReader stopReader) throws IOException {
@@ -175,24 +189,20 @@ public class JourneyPlanner extends GUI {
                     outgoing.addIncomingConnection(c);
                     t.addConnection(c);
                 }
+                tripList.add(t);
             }
         }
     }
 
     private void populateDataStructures() {
         for (Stop s : stopList) {
-            stopHashMap.put(s.getName(), s);
             // stopQuad.add(s); TODO
             stopTrie.add(s);
         }
     }
 
     public static void main(String[] args) {
-        new JourneyPlanner().getTextOutputArea().setText("TODO: Implement a lot of things");
+        new JourneyPlanner();
     }
 
-    public JourneyPlanner(){
-        origin = new Location(0, 0);
-        scale = 10;
-    }
 }

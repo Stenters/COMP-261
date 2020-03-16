@@ -9,8 +9,9 @@ public class JourneyTrie {
     private Node root = new Node((char) 0);
 
     public void add(Stop s) {
+
         Node currentNode = root;
-        for (char c : s.getName().toCharArray()) {
+        for (char c : s.getName().toLowerCase().toCharArray()) {
             if (currentNode.hasChild(c)) {
                 currentNode = currentNode.getChild(c);
             } else {
@@ -22,12 +23,14 @@ public class JourneyTrie {
     }
 
     public List<Stop> allThatBeginWith(String prefix) {
+        prefix = prefix.toLowerCase();
         Node currentNode = root;
+
         for (char c : prefix.toCharArray()) {
             if (currentNode.hasChild(c)) {
                 currentNode = currentNode.getChild(c);
             } else {
-                return null;
+                return new LinkedList<Stop>();
             }
         }
 
@@ -35,7 +38,11 @@ public class JourneyTrie {
     }
 
     private List<Stop> getAllChildStops(Node currentNode) {
-        List<Stop> matches = new LinkedList<Stop>(currentNode.getAllStops());
+        if (currentNode.getAllStops().size() > 0) {
+            return currentNode.getAllStops();
+        }
+
+        List<Stop> matches = new LinkedList<Stop>();
 
         for(Node n : currentNode.getAllChildren()) {
             matches.addAll(getAllChildStops(n));

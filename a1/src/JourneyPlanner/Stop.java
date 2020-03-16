@@ -2,7 +2,10 @@ package JourneyPlanner;
 
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Stop {
 
@@ -66,12 +69,14 @@ public class Stop {
 
     public void setHighlight(boolean isHighlighted) {
         this.isHighlighted = isHighlighted;
-
-        for (Connection c : incoming) {
-            c.getParent().highlight();
-        } for (Connection c : outgoing) {
-            c.getParent().highlight();
-        }
     }
 
+    public void setTripHighlighted(boolean isHighlighted) {
+        for(Trip t : getTrips()) { t.setHighlight(isHighlighted); }
+    }
+
+    public List<Trip> getTrips() {
+        return Stream.concat(incoming.stream(), outgoing.stream())
+                .map(c -> c.getParent()).distinct().collect(Collectors.toCollection(LinkedList::new));
+    }
 }

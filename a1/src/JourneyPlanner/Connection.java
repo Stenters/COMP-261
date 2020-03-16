@@ -21,8 +21,6 @@ public class Connection {
         }
         double startX = start.getLocation().asPoint(origin, scale).x, startY = start.getLocation().asPoint(origin, scale).y;
         double endX = end.getLocation().asPoint(origin, scale).x, endY = end.getLocation().asPoint(origin, scale).y;
-//        double startX = origin.x + (start.getLocation().x * scale) + (Stop.CIRCLE_DIAMETER / 2.0), startY = origin.y + (start.getLocation().y * scale) + (Stop.CIRCLE_DIAMETER / 2.0);
-//        double endX = origin.x + (end.getLocation().x * scale) + (Stop.CIRCLE_DIAMETER / 2.0), endY = origin.y + (end.getLocation().y * scale) + (Stop.CIRCLE_DIAMETER / 2.0);
 
         g.drawLine((int) startX, (int) startY, (int) endX, (int) endY);
     }
@@ -32,6 +30,9 @@ public class Connection {
     }
 
     public void setHighlight(boolean isHighlighted) {
+//        if (isHighlighted) System.out.println("Highlighting connection");
+        if (!isHighlighted) System.out.println("Unhighlighting connection");;
         this.isHighlighted = isHighlighted;
+        start.setHighlight(true);
     }
 }
