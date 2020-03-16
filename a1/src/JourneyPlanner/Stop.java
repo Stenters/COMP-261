@@ -44,10 +44,6 @@ public class Stop {
         }
     }
 
-    public void move (double dx, double dy) {
-        location = location.moveBy(dx, dy);
-    }
-
     public void addIncomingConnection(Connection c) {
         incoming.add(c);
     }

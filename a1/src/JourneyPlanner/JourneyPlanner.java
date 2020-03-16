@@ -15,13 +15,17 @@ public class JourneyPlanner extends GUI {
     List<Trip> tripList = new LinkedList<Trip>();
 
     public static int MOVE_FACTOR = 10, ZOOM_FACTOR = 2;
-    private Location origin = new Location(0,0);
+    private Location origin = new Location(0,0), clickLocation = new Location(0,0);
     private double scale = 10;
 
     /** GUI Methods **/
     @Override
     protected void redraw(Graphics g) {
         if (stopList == null) return;
+
+        g.setColor(Color.BLACK);
+        Point loc = clickLocation.asPoint(origin, scale);
+        g.fillOval(loc.x, loc.y, 10, 10);
 
         for (Stop s : stopList) {
             s.draw(g, origin, scale);
@@ -30,7 +34,9 @@ public class JourneyPlanner extends GUI {
 
     @Override
     protected void onClick(MouseEvent e) {
-        Stop s = findNearestStop(e.getX(), e.getY());
+//        Stop s = findNearestStop(e.getX(), e.getY());
+        clickLocation = Location.newFromPoint(new Point(e.getX(), e.getY()), origin, scale);
+        Stop s = stopQuad.findClosest(clickLocation);
         unhighlight();
         s.setHighlight(true);
         getTextOutputArea().setText("Stop " + s.getName() + "\nTRIPS:\n");
@@ -44,7 +50,7 @@ public class JourneyPlanner extends GUI {
         String text = getSearchBox().getText();
         unhighlight();
 
-        List<Stop> matchingStops = findMatchingRoutes(text);
+        List<Stop> matchingStops = stopTrie.allThatBeginWith(text);
         getTextOutputArea().setText(matchingStops.size() + " results found\n");
 
         for (Stop s : matchingStops) {
@@ -136,10 +142,6 @@ public class JourneyPlanner extends GUI {
         return winner;
     }
 
-    private List<Stop> findMatchingRoutes(String text) {
-        return stopTrie.allThatBeginWith(text);
-    }
-
     private void unhighlight() {
         for (Trip t : tripList) {
             t.setHighlight(false);
@@ -198,35 +200,29 @@ public class JourneyPlanner extends GUI {
 
     private void populateDataStructures() {
 
+        System.out.println("Testing if different");
+
+        for(Stop s : stopList){
+            Location curloc = s.getLocation();
+            Point curpoint = s.getLocation().asPoint(origin, scale);
+
+            for (Stop s1 : stopList) {
+                Location otherloc = s1.getLocation();
+                Point otherPoint = s1.getLocation().asPoint(origin, scale);
+
+                double dL= Math.sqrt(Math.pow(curloc.x - otherloc.x, 2) + Math.pow(curloc.y - otherloc.y, 2));
+                double dP= Math.sqrt(Math.pow(curpoint.x - otherPoint.x, 2) + Math.pow(curpoint.y - otherPoint.y, 2));
+
+                if (dL - dP < .0001 && dL - dP > .0001) {
+                    System.out.println("Not the same!");
+                }
+            }
+        }
+
         for (Stop s : stopList) {
-            stopQuad.add(s);
+            stopQuad.add(s, origin, scale);
             stopTrie.add(s);
         }
-//        int scores[] = new int[10000];
-//        for (int i = -50; i < 50; ++i){
-//            for (int j = -50; j < 50; ++j){
-//                JourneyQuad jq = new JourneyQuad(i,j);
-//
-//                for (Stop s : stopList){
-//                    jq.add(s);
-//                }
-//
-//                scores[(i+50) * 100 + (j+50)] = jq.maxdepth;
-//            }
-//        }
-
-//        int winner = Integer.MAX_VALUE, winningI = 0, winningJ = 0;
-//        for (int i = 0; i < 100; ++i){
-//            for (int j = 0; j < 100; ++j){
-//                if (scores[i*100+j] < winner){
-//                    winner = scores[i*100+j];
-//                    winningI = i;
-//                    winningJ = j;
-//                }
-//            }
-//        }
-//
-//        System.out.printf("Best starting position is (%d, %d) with a max depth of %d\n", winningI, winningJ, winner);
 
     }
 

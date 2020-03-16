@@ -30,8 +30,6 @@ public class Connection {
     }
 
     public void setHighlight(boolean isHighlighted) {
-//        if (isHighlighted) System.out.println("Highlighting connection");
-        if (!isHighlighted) System.out.println("Unhighlighting connection");;
         this.isHighlighted = isHighlighted;
         start.setHighlight(true);
     }

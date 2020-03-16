@@ -1,5 +1,7 @@
 package JourneyPlanner;
 
+import java.awt.*;
+
 public class JourneyQuad {
     private Node root;
 
@@ -7,13 +9,13 @@ public class JourneyQuad {
         root = new Node(new Stop("", "", new Location(51,61)));
     }
 
-    public void add(Stop s) {
+    public void add(Stop s, Location origin, double scale) {
         Node currNode = root;
-        Location current = currNode.data.getLocation(), target = s.getLocation();
+        Point target = s.getLocation().asPoint(origin, scale);
         boolean isDone = false;
 
         while (!isDone) {
-            current = currNode.data.getLocation();
+            Point current = currNode.data.getLocation().asPoint(origin, scale);
 
             if (target.y > current.y) {
                 if (target.x < current.x) {
@@ -42,6 +44,32 @@ public class JourneyQuad {
                         isDone = true;
                     }
                     currNode = currNode.getChildFour();
+                }
+            }
+        }
+    }
+
+    public Stop findClosest(Location clickLocation) {
+        Node currentNode = root;
+
+        while (true){
+            Location current = currentNode.getData().getLocation();
+
+            if (clickLocation.y > current.y){
+                if (clickLocation.x < current.x){
+                    if (currentNode.childOne == null) return currentNode.getData();
+                    currentNode = currentNode.getChildOne();
+                } else {
+                    if (currentNode.childTwo == null) return currentNode.getData();
+                    currentNode = currentNode.getChildTwo();
+                }
+            } else {
+                if (clickLocation.x < current.x){
+                    if (currentNode.childThree == null) return currentNode.getData();
+                    currentNode = currentNode.getChildThree();
+                } else {
+                    if (currentNode.childFour == null) return currentNode.getData();
+                    currentNode = currentNode.getChildFour();
                 }
             }
         }
