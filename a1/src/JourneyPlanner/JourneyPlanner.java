@@ -21,6 +21,8 @@ public class JourneyPlanner extends GUI {
     /** GUI Methods **/
     @Override
     protected void redraw(Graphics g) {
+        if (stopList == null) return;
+
         for (Stop s : stopList) {
             s.draw(g, origin, scale);
         }
@@ -195,10 +197,37 @@ public class JourneyPlanner extends GUI {
     }
 
     private void populateDataStructures() {
+
         for (Stop s : stopList) {
-            // stopQuad.add(s); TODO
+            stopQuad.add(s);
             stopTrie.add(s);
         }
+//        int scores[] = new int[10000];
+//        for (int i = -50; i < 50; ++i){
+//            for (int j = -50; j < 50; ++j){
+//                JourneyQuad jq = new JourneyQuad(i,j);
+//
+//                for (Stop s : stopList){
+//                    jq.add(s);
+//                }
+//
+//                scores[(i+50) * 100 + (j+50)] = jq.maxdepth;
+//            }
+//        }
+
+//        int winner = Integer.MAX_VALUE, winningI = 0, winningJ = 0;
+//        for (int i = 0; i < 100; ++i){
+//            for (int j = 0; j < 100; ++j){
+//                if (scores[i*100+j] < winner){
+//                    winner = scores[i*100+j];
+//                    winningI = i;
+//                    winningJ = j;
+//                }
+//            }
+//        }
+//
+//        System.out.printf("Best starting position is (%d, %d) with a max depth of %d\n", winningI, winningJ, winner);
+
     }
 
     public static void main(String[] args) {

@@ -25,7 +25,6 @@ public class Stop {
         this.location = loc;
         this.incoming = new ArrayList<Connection>();
         this.outgoing = new ArrayList<Connection>();
-        System.out.println("Creating stop " + name);
     }
 
     public void draw(Graphics g, Location origin, double scale) {
