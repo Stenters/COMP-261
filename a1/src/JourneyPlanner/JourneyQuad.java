@@ -9,13 +9,13 @@ public class JourneyQuad {
         root = new Node(new Stop("", "", new Location(51,61)));
     }
 
-    public void add(Stop s, Location origin, double scale) {
+    public void add(Stop s) {
         Node currNode = root;
-        Point target = s.getLocation().asPoint(origin, scale);
+        Location target = s.getLocation();
         boolean isDone = false;
 
         while (!isDone) {
-            Point current = currNode.data.getLocation().asPoint(origin, scale);
+            Location current = currNode.data.getLocation();
 
             if (target.y > current.y) {
                 if (target.x < current.x) {

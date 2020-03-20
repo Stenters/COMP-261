@@ -34,7 +34,6 @@ public class JourneyPlanner extends GUI {
 
     @Override
     protected void onClick(MouseEvent e) {
-//        Stop s = findNearestStop(e.getX(), e.getY());
         clickLocation = Location.newFromPoint(new Point(e.getX(), e.getY()), origin, scale);
         Stop s = stopQuad.findClosest(clickLocation);
         unhighlight();
@@ -125,23 +124,6 @@ public class JourneyPlanner extends GUI {
 
     /** Helper Methods **/
 
-    private Stop findNearestStop(int x, int y) {
-        // TODO: implement quad
-        Point click = new Point(x, y);
-        double minDist = Double.MAX_VALUE;
-        Stop winner = null;
-
-        for (Stop s : stopList) {
-            double dist = s.getLocation().asPoint(origin, scale).distance(click);
-            if (dist < minDist) {
-                minDist = dist;
-                winner = s;
-            }
-        }
-
-        return winner;
-    }
-
     private void unhighlight() {
         for (Trip t : tripList) {
             t.setHighlight(false);
@@ -199,31 +181,10 @@ public class JourneyPlanner extends GUI {
     }
 
     private void populateDataStructures() {
-
-        System.out.println("Testing if different");
-
-        for(Stop s : stopList){
-            Location curloc = s.getLocation();
-            Point curpoint = s.getLocation().asPoint(origin, scale);
-
-            for (Stop s1 : stopList) {
-                Location otherloc = s1.getLocation();
-                Point otherPoint = s1.getLocation().asPoint(origin, scale);
-
-                double dL= Math.sqrt(Math.pow(curloc.x - otherloc.x, 2) + Math.pow(curloc.y - otherloc.y, 2));
-                double dP= Math.sqrt(Math.pow(curpoint.x - otherPoint.x, 2) + Math.pow(curpoint.y - otherPoint.y, 2));
-
-                if (dL - dP < .0001 && dL - dP > .0001) {
-                    System.out.println("Not the same!");
-                }
-            }
-        }
-
         for (Stop s : stopList) {
-            stopQuad.add(s, origin, scale);
+            stopQuad.add(s);
             stopTrie.add(s);
         }
-
     }
 
     public static void main(String[] args) {
