@@ -185,6 +185,7 @@ public class JourneyPlanner extends GUI {
             stopQuad.add(s);
             stopTrie.add(s);
         }
+        System.out.println(stopQuad);
     }
 
     public static void main(String[] args) {

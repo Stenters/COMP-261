@@ -1,7 +1,5 @@
 package JourneyPlanner;
 
-import java.awt.*;
-
 public class JourneyQuad {
     private Node root;
 
@@ -54,20 +52,27 @@ public class JourneyQuad {
 
         while (true){
             Location current = currentNode.getData().getLocation();
+//            System.out.printf("comparing (%f, %f) and (%f,%f)\n",
+//                    clickLocation.x, clickLocation.y, current.x, current.y);
+            listDepth(currentNode);
 
             if (clickLocation.y > current.y){
                 if (clickLocation.x < current.x){
+                    System.out.println("Choosing child one");
                     if (currentNode.childOne == null) return currentNode.getData();
                     currentNode = currentNode.getChildOne();
                 } else {
+                    System.out.println("Choosing child two");
                     if (currentNode.childTwo == null) return currentNode.getData();
                     currentNode = currentNode.getChildTwo();
                 }
             } else {
                 if (clickLocation.x < current.x){
+                    System.out.println("Choosing child three");
                     if (currentNode.childThree == null) return currentNode.getData();
                     currentNode = currentNode.getChildThree();
                 } else {
+                    System.out.println("Choosing child four");
                     if (currentNode.childFour == null) return currentNode.getData();
                     currentNode = currentNode.getChildFour();
                 }
@@ -94,9 +99,39 @@ public class JourneyQuad {
         return sb.toString();
     }
 
+    private void listDepth(Node n) {
+        int d1,d2,d3,d4;
+
+        if (n.childOne == null) d1 = 0;
+        else d1 = n.childOne.getDepth();
+        if (n.childTwo == null) d2 = 0;
+        else d2 = n.childTwo.getDepth();
+        if (n.childThree == null) d3 = 0;
+        else d3 = n.childThree.getDepth();
+        if (n.childFour == null) d4 = 0;
+        else d4 = n.childFour.getDepth();
+
+        System.out.printf("\t(%d) (%d) (%d) (%d)\n", d1,d2,d3,d4);
+    }
+
     private static class Node {
         private Stop data;
         private Node childOne, childTwo, childThree, childFour;
+
+        public int getDepth() {
+            int d1,d2,d3,d4;
+
+            if (childOne == null) d1 = 0;
+            else d1 = childOne.getDepth();
+            if (childTwo == null) d2 = 0;
+            else d2 = childTwo.getDepth();
+            if (childThree == null) d3 = 0;
+            else d3 = childThree.getDepth();
+            if (childFour == null) d4 = 0;
+            else d4 = childFour.getDepth();
+
+            return Math.max(Math.max(d1,d2),Math.max(d3,d4)) + 1;
+        }
 
         Node(Stop data) {
             this.data = data;
