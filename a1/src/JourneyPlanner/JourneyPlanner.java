@@ -15,17 +15,13 @@ public class JourneyPlanner extends GUI {
     List<Trip> tripList = new LinkedList<Trip>();
 
     public static int MOVE_FACTOR = 10, ZOOM_FACTOR = 2;
-    private Location origin = new Location(0,0), clickLocation = new Location(0,0);
+    private Location origin = new Location(0,0);
     private double scale = 10;
 
     /** GUI Methods **/
     @Override
     protected void redraw(Graphics g) {
         if (stopList == null) return;
-
-        g.setColor(Color.BLACK);
-        Point loc = clickLocation.asPoint(origin, scale);
-        g.fillOval(loc.x, loc.y, 10, 10);
 
         for (Stop s : stopList) {
             s.draw(g, origin, scale);
@@ -34,8 +30,9 @@ public class JourneyPlanner extends GUI {
 
     @Override
     protected void onClick(MouseEvent e) {
-        clickLocation = Location.newFromPoint(new Point(e.getX(), e.getY()), origin, scale);
-        Stop s = stopQuad.findClosest(clickLocation);
+//        clickLocation = Location.newFromPoint(new Point(e.getX(), e.getY()), origin, scale);
+//        Stop s = stopQuad.findClosest(clickLocation);
+        Stop s = findNearestStop(e.getX(), e.getY());
         unhighlight();
         s.setHighlight(true);
         getTextOutputArea().setText("Stop " + s.getName() + "\nTRIPS:\n");
@@ -132,6 +129,22 @@ public class JourneyPlanner extends GUI {
         for (Stop s : stopList) {
             s.setHighlight(false);
         }
+    }
+
+    private Stop findNearestStop(int x, int y) {
+        Point click = new Point(x, y);
+        double minDist = Double.MAX_VALUE;
+        Stop winner = null;
+
+        for (Stop s : stopList) {
+            double dist = s.getLocation().asPoint(origin, scale).distance(click);
+            if (dist < minDist) {
+                minDist = dist;
+                winner = s;
+            }
+        }
+
+        return winner;
     }
 
     private void parseStopFile(BufferedReader stopReader) throws IOException {
