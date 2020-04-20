@@ -1,11 +1,12 @@
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Graphics;
-import java.awt.Point;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 
 /**
  * This is the main class for the mapping program. It extends the GUI abstract
@@ -15,8 +16,6 @@ import java.util.HashSet;
  * @author tony
  */
 public class  Mapper extends GUI {
-	public Mapper(){super();}
-
 	public static final Color NODE_COLOUR = new Color(77, 113, 255);
 	public static final Color SEGMENT_COLOUR = new Color(130, 130, 130);
 	public static final Color HIGHLIGHT_COLOUR = new Color(255, 219, 77);
@@ -44,6 +43,10 @@ public class  Mapper extends GUI {
 
 	// our data structures.
 	private Graph graph;
+
+	// To determine if routes should compute by distance (true) or
+	// time (false)
+	private boolean isDistance = true;
 
 	@Override
 	protected void redraw(Graphics g) {
@@ -75,11 +78,14 @@ public class  Mapper extends GUI {
 
 	@Override
 	protected void onSearch() {
-		// Does nothing
+		// TODO
 	}
 
 	@Override
 	protected void onMove(Move m) {
+		if (origin == null) {
+			System.out.println("origin is null!");
+		}
 		if (m == GUI.Move.NORTH) {
 			origin = origin.moveBy(0, MOVE_AMOUNT / scale);
 		} else if (m == GUI.Move.SOUTH) {
@@ -131,6 +137,88 @@ public class  Mapper extends GUI {
 	public static void main(String[] args) {
 		new Mapper();
 	}
+
+	@Override
+	protected void initialise() {
+		super.initialise();
+
+		JPanel tripPanel = new JPanel();
+		tripPanel.setLayout(new BoxLayout(tripPanel, BoxLayout.LINE_AXIS));
+		tripPanel.setBorder(BorderFactory.createEmptyBorder(0,0,5,0));
+
+		JLabel start = new JLabel("Start"), end = new JLabel("End");
+		// TODO: select start and end
+		JTextField startNode = new JTextField("15492"), endNode = new JTextField("15239");
+		ButtonGroup distanceOrTime = new ButtonGroup();
+		JRadioButton distance = new JRadioButton("Distance"), time = new JRadioButton("Time");
+		JButton findRoute = new JButton("Search");
+
+		findRoute.addActionListener(e -> {
+			pathfind(graph.nodes.get(Integer.parseInt(startNode.getText())),
+					graph.nodes.get(Integer.parseInt(endNode.getText())));
+		});
+
+		distance.addActionListener(e -> {isDistance = true;});
+		time.addActionListener(e -> {isDistance = false;});
+
+		distance.setSelected(true);
+		distanceOrTime.add(distance);
+		distanceOrTime.add(time);
+
+		tripPanel.add(start);
+		tripPanel.add(Box.createRigidArea(new Dimension(5,0)));
+		tripPanel.add(startNode);
+		tripPanel.add(Box.createRigidArea(new Dimension(15,0)));
+		tripPanel.add(end);
+		tripPanel.add(Box.createRigidArea(new Dimension(5,0)));
+		tripPanel.add(endNode);
+
+		tripPanel.add(Box.createRigidArea(new Dimension(15,0)));
+		tripPanel.add(distance);
+		tripPanel.add(time);
+
+		tripPanel.add(Box.createHorizontalGlue());
+		tripPanel.add(findRoute);
+
+		frame.add(tripPanel, BorderLayout.CENTER);
+		frame.pack();
+		frame.setVisible(true);
+	}
+
+	private void pathfind(Node start, Node end) {
+		System.out.printf("finding route from \n\t%s \nto \n\t%s \nusing metric %s\n", start, end, isDistance);
+//		LinkedList<Node> open = new LinkedList<>(), closed = new LinkedList<>();
+//		HashMap<Node, Node> previous = new HashMap<>();
+//		open.add(start);
+//
+//		// TODO: implement time
+
+		LinkedList<Step> open = new LinkedList<>(), closed = new LinkedList<>();
+		open.add(new Step(start, end));
+
+		while (open.size() > 0) {
+			Step current = open.stream().min((x,y) -> Double.compare(x.getF(), y.getF())).get();
+			System.out.printf("%s is minimum of %s", current, open);
+
+//			LinkedList<Step> successors = new LinkedList<>();
+			for(Node n : current.current.getNeighbors()) {
+				Step nextStep = new Step(n, current, end, isDistance);
+				if (open.contains(nextStep) && open.get(open.indexOf(nextStep)).g <= nextStep.g) { continue; }
+				else if (closed.contains(nextStep)) {
+					if (closed.get(closed.indexOf(nextStep)).g <= nextStep.g) { continue; }
+					closed.remove(nextStep);
+					open.add(nextStep);
+				}
+				else {
+					open.add(nextStep);
+				}
+				closed.add(current);
+				open.remove(current);
+			}
+
+		}
+	}
+
 }
 
 // code for COMP261 assignments

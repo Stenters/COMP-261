@@ -157,7 +157,7 @@ public abstract class GUI {
 	 * your UI.
 	 */
 
-	private JFrame frame;
+	protected JFrame frame;
 
 	private JComponent drawing; // we customise this to make it a drawing pane.
 	private JTextArea textOutputArea;
@@ -170,7 +170,7 @@ public abstract class GUI {
 	}
 
 	@SuppressWarnings("serial")
-	private void initialise() {
+	protected void initialise() {
 
 		/*
 		 * first, we make the buttons etc. that go along the top bar.
@@ -400,6 +400,10 @@ public abstract class GUI {
 		DefaultCaret caret = (DefaultCaret) textOutputArea.getCaret();
 		caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
 
+
+
+
+
 		/*
 		 * finally, make the outer JFrame and put it all together. this is more
 		 * complicated than it could be, as we put the drawing and text output
@@ -423,11 +427,11 @@ public abstract class GUI {
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setLayout(new BorderLayout());
 		frame.add(controls, BorderLayout.NORTH);
-		frame.add(split, BorderLayout.CENTER);
+		frame.add(split, BorderLayout.SOUTH);
 
 		// always do these two things last, in this order.
-		frame.pack();
-		frame.setVisible(true);
+//		frame.pack();
+//		frame.setVisible(true);
 	}
 }
 

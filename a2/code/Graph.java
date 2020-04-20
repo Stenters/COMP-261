@@ -17,7 +17,7 @@ import java.util.Map;
  */
 public class Graph {
 	// map node IDs to Nodes.
-	Map<Integer, Node> nodes = new HashMap<>();
+	Map<Integer, Node> nodes;
 	// map road IDs to Roads.
 	Map<Integer, Road> roads;
 	// just some collection of Segments.

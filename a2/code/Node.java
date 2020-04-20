@@ -1,9 +1,7 @@
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Point;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Node represents an intersection in the road graph. It stores its ID and its
@@ -42,15 +40,28 @@ public class Node {
 	public String toString() {
 		Set<String> edges = new HashSet<String>();
 		for (Segment s : segments) {
-			if (!edges.contains(s.road.name))
-				edges.add(s.road.name);
+			edges.add(s.road.name);
 		}
 
-		String str = "ID: " + nodeID + "  loc: " + location + "\nroads: ";
+		StringBuilder str = new StringBuilder("ID: " + nodeID + "  loc: " + location + "\nroads: ");
 		for (String e : edges) {
-			str += e + ", ";
+			str.append(e).append(", ");
 		}
 		return str.substring(0, str.length() - 2);
+	}
+
+	public List<Node> getNeighbors() {
+		LinkedList<Node> nodes = new LinkedList<>();
+
+		for (Segment s : segments) {
+			if (s.start == this) {
+				nodes.add(s.end);
+			} else if (s.end == this) {
+				nodes.add(s.start);
+			}
+		}
+
+		return nodes;
 	}
 }
 
