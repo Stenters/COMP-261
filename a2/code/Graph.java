@@ -72,6 +72,7 @@ public class Graph {
 	public void setHighlight(Collection<Road> roads) {
 		this.highlightedRoads = roads;
 	}
+
 }
 
 // code for COMP261 assignments

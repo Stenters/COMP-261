@@ -19,7 +19,7 @@ public class Node {
 	public Node(int nodeID, double lat, double lon) {
 		this.nodeID = nodeID;
 		this.location = Location.newFromLatLon(lat, lon);
-		this.segments = new HashSet<Segment>();
+		this.segments = new HashSet<>();
 	}
 
 	public void addSegment(Segment seg) {
@@ -38,7 +38,7 @@ public class Node {
 	}
 
 	public String toString() {
-		Set<String> edges = new HashSet<String>();
+		Set<String> edges = new HashSet<>();
 		for (Segment s : segments) {
 			edges.add(s.road.name);
 		}
@@ -63,6 +63,7 @@ public class Node {
 
 		return nodes;
 	}
+
 }
 
 // code for COMP261 assignments

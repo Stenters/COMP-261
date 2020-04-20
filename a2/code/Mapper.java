@@ -1,6 +1,5 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.util.*;
@@ -45,6 +44,9 @@ public class  Mapper extends GUI {
 	// time (false)
 	private boolean isDistance = true;
 
+	// Nodes to search for using a*
+	private Node start, end;
+
 	@Override
 	protected void redraw(Graphics g) {
 		if (graph != null)
@@ -66,10 +68,25 @@ public class  Mapper extends GUI {
 			}
 		}
 
+		if (closest == null) { return; }
+
 		// if it's close enough, highlight it and show some information.
 		if (clicked.distance(closest.location) < MAX_CLICKED_DISTANCE) {
 			graph.setHighlight(closest);
 			getTextOutputArea().setText(closest.toString());
+
+			if (SwingUtilities.isRightMouseButton(e)) {
+				JPopupMenu context = new JPopupMenu();
+				JMenuItem startItem = new JMenuItem("Make start"), endItem = new JMenuItem("Make end");
+
+				Node finalClosest = closest; // BC how Java handles variables in lambdas
+				startItem.addActionListener(e1 -> start = finalClosest);
+				endItem.addActionListener(e1 -> end = finalClosest);
+
+				context.add(startItem);
+				context.add(endItem);
+				context.show(e.getComponent(), e.getX(), e.getY());
+			}
 		}
 	}
 
@@ -143,30 +160,32 @@ public class  Mapper extends GUI {
 		tripPanel.setLayout(new BoxLayout(tripPanel, BoxLayout.LINE_AXIS));
 		tripPanel.setBorder(BorderFactory.createEmptyBorder(0,0,5,0));
 
-		JLabel start = new JLabel("Start"), end = new JLabel("End");
+		JLabel startLabel = new JLabel("Start"), endLabel = new JLabel("End");
 		// TODO: select start and end
-		JTextField startNode = new JTextField("15492"), endNode = new JTextField("15239");
+		JTextField startNode = new JTextField(), endNode = new JTextField();
 		ButtonGroup distanceOrTime = new ButtonGroup();
 		JRadioButton distance = new JRadioButton("Distance"), time = new JRadioButton("Time");
 		JButton findRoute = new JButton("Search");
 
-		findRoute.addActionListener(e -> {
-			pathfind(graph.nodes.get(Integer.parseInt(startNode.getText())),
-					graph.nodes.get(Integer.parseInt(endNode.getText())));
-		});
+		startNode.setEnabled(false);
+		endNode.setEnabled(false);
 
-		distance.addActionListener(e -> {isDistance = true;});
-		time.addActionListener(e -> {isDistance = false;});
+		findRoute.addActionListener(e ->
+			listRoute(graph.nodes.get(Integer.parseInt(startNode.getText())),
+					  graph.nodes.get(Integer.parseInt(endNode.getText()))));
+
+		distance.addActionListener(e -> isDistance = true);
+		time.addActionListener(e -> isDistance = false);
 
 		distance.setSelected(true);
 		distanceOrTime.add(distance);
 		distanceOrTime.add(time);
 
-		tripPanel.add(start);
+		tripPanel.add(startLabel);
 		tripPanel.add(Box.createRigidArea(new Dimension(5,0)));
 		tripPanel.add(startNode);
 		tripPanel.add(Box.createRigidArea(new Dimension(15,0)));
-		tripPanel.add(end);
+		tripPanel.add(endLabel);
 		tripPanel.add(Box.createRigidArea(new Dimension(5,0)));
 		tripPanel.add(endNode);
 
@@ -182,32 +201,63 @@ public class  Mapper extends GUI {
 		frame.setVisible(true);
 	}
 
-	private void pathfind(Node start, Node end) {
-//		System.out.printf("finding route from \n\t%s \nto \n\t%s \nusing metric %s\n", start, end, isDistance);
+	private Step aStar(Node start, Node end) {
 
 		LinkedList<Step> open = new LinkedList<>(), closed = new LinkedList<>();
 		open.add(new Step(start, end));
 
 		while (open.size() > 0) {
 			Step current = open.stream().min(Comparator.comparingDouble(Step::getF)).get();
-			System.out.printf("%s is minimum of %s", current, open);
+//			System.out.printf("\n%s is minimum of \n%s\n\n", current, open);
+
+			if (current.current == end) {
+				return current;
+			}
 
 			for(Node n : current.current.getNeighbors()) {
 				Step nextStep = new Step(n, current, end, isDistance);
-				if (open.contains(nextStep) && open.get(open.indexOf(nextStep)).g <= nextStep.g) { continue; }
-				else if (closed.contains(nextStep)) {
-					if (closed.get(closed.indexOf(nextStep)).g <= nextStep.g) { continue; }
-					closed.remove(nextStep);
-					open.add(nextStep);
+
+				// Comparator is overridden, so only looks for Step objects with the same current node
+				if (!open.contains(nextStep)) {
+					if (!closed.contains(nextStep)) {
+						open.add(nextStep);
+					} else if (closed.get(closed.indexOf(nextStep)).g > nextStep.g) {
+						closed.remove(nextStep);
+						open.add(nextStep);
+					}
+				} else if (open.get(open.indexOf(nextStep)).g > nextStep.g) {
+					open.set(open.indexOf(nextStep), nextStep);
 				}
-				else {
-					open.add(nextStep);
-				}
-				closed.add(current);
-				open.remove(current);
 			}
 
+			closed.add(current);
+			open.remove(current);
+
 		}
+
+		return null;
+	}
+
+	private void listRoute(Node start, Node end) {
+		Stack<Segment> segments = new Stack<>();
+		Step curr = aStar(start, end);
+		if (curr == null) {
+			System.err.println("A* failed on nodes \n" + start + "\n\n\tand\n\n" + end);
+			return;
+		}
+
+		while (curr.parent != null) {
+			segments.push(curr.toParent);
+			curr = curr.parent;
+		}
+
+		getTextOutputArea().setText("");
+
+		while (!segments.empty()) {
+			Segment s = segments.pop();
+			getTextOutputArea().append(s.road.name + " (" + s.length + ")\n");
+		}
+
 	}
 
 }
