@@ -3,10 +3,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseEvent;
 import java.io.File;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
+import java.util.*;
 
 /**
  * This is the main class for the mapping program. It extends the GUI abstract
@@ -186,21 +183,15 @@ public class  Mapper extends GUI {
 	}
 
 	private void pathfind(Node start, Node end) {
-		System.out.printf("finding route from \n\t%s \nto \n\t%s \nusing metric %s\n", start, end, isDistance);
-//		LinkedList<Node> open = new LinkedList<>(), closed = new LinkedList<>();
-//		HashMap<Node, Node> previous = new HashMap<>();
-//		open.add(start);
-//
-//		// TODO: implement time
+//		System.out.printf("finding route from \n\t%s \nto \n\t%s \nusing metric %s\n", start, end, isDistance);
 
 		LinkedList<Step> open = new LinkedList<>(), closed = new LinkedList<>();
 		open.add(new Step(start, end));
 
 		while (open.size() > 0) {
-			Step current = open.stream().min((x,y) -> Double.compare(x.getF(), y.getF())).get();
+			Step current = open.stream().min(Comparator.comparingDouble(Step::getF)).get();
 			System.out.printf("%s is minimum of %s", current, open);
 
-//			LinkedList<Step> successors = new LinkedList<>();
 			for(Node n : current.current.getNeighbors()) {
 				Step nextStep = new Step(n, current, end, isDistance);
 				if (open.contains(nextStep) && open.get(open.indexOf(nextStep)).g <= nextStep.g) { continue; }
