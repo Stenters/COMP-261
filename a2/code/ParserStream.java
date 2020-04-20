@@ -11,9 +11,9 @@ import java.util.stream.*;
  * It implements the methods using the Stream functionality.
  * It is faster, and help you learn a bit of recent and fancy Java functionalities.
  */
-public class Parser {
+public class ParserStream {
 
-    private Parser(){
+    private ParserStream(){
         //empty private constructor
     }
 
@@ -132,7 +132,7 @@ public class Parser {
         if(skip < 0) skip = 0;
         return Stream.of(tokens)
                      .skip(skip)	//skip to read the coordinates
-                     .mapToDouble(Parser::asDouble)
+                     .mapToDouble(ParserStream::asDouble)
                      .toArray();
     }
 }

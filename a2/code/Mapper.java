@@ -14,7 +14,9 @@ import java.util.HashSet;
  * 
  * @author tony
  */
-public class Mapper extends GUI {
+public class  Mapper extends GUI {
+	public Mapper(){super();}
+
 	public static final Color NODE_COLOUR = new Color(77, 113, 255);
 	public static final Color SEGMENT_COLOUR = new Color(130, 130, 130);
 	public static final Color HIGHLIGHT_COLOUR = new Color(255, 219, 77);

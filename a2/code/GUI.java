@@ -166,7 +166,7 @@ public abstract class GUI {
 	private JFileChooser fileChooser;
 
 	public GUI() {
-		initialise();
+		 initialise();
 	}
 
 	@SuppressWarnings("serial")
