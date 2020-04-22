@@ -76,6 +76,8 @@ public class  Mapper extends GUI {
 			getTextOutputArea().setText(closest.toString());
 
 			if (SwingUtilities.isRightMouseButton(e)) {
+				System.out.println("RMB clicked");
+
 				JPopupMenu context = new JPopupMenu();
 				JMenuItem startItem = new JMenuItem("Make start"), endItem = new JMenuItem("Make end");
 
