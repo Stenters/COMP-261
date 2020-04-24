@@ -46,6 +46,7 @@ public class  Mapper extends GUI {
 
 	// Nodes to search for using a*
 	private Node start, end;
+	private JTextField startValue, endValue;
 
 	@Override
 	protected void redraw(Graphics g) {
@@ -72,18 +73,22 @@ public class  Mapper extends GUI {
 
 		// if it's close enough, highlight it and show some information.
 		if (clicked.distance(closest.location) < MAX_CLICKED_DISTANCE) {
-			graph.setHighlight(closest);
+			graph.addHighlightedNode(closest);
 			getTextOutputArea().setText(closest.toString());
 
 			if (SwingUtilities.isRightMouseButton(e)) {
-				System.out.println("RMB clicked");
-
 				JPopupMenu context = new JPopupMenu();
 				JMenuItem startItem = new JMenuItem("Make start"), endItem = new JMenuItem("Make end");
 
 				Node finalClosest = closest; // BC how Java handles variables in lambdas
-				startItem.addActionListener(e1 -> start = finalClosest);
-				endItem.addActionListener(e1 -> end = finalClosest);
+				startItem.addActionListener(e1 -> {
+					start = finalClosest;
+					startValue.setText(String.valueOf(start.nodeID));
+				});
+				endItem.addActionListener(e1 -> {
+					end = finalClosest;
+					endValue.setText(String.valueOf(end.nodeID));
+				});
 
 				context.add(startItem);
 				context.add(endItem);
@@ -94,7 +99,14 @@ public class  Mapper extends GUI {
 
 	@Override
 	protected void onSearch() {
-		// TODO
+		String text = getSearchBox().getText();
+		getTextOutputArea().setText("");
+		for (Node n : graph.nodes.values()){
+			if (String.valueOf(n.nodeID).contains(text)) {
+				getTextOutputArea().append(n + "\n");
+			}
+		}
+
 	}
 
 	@Override
@@ -127,8 +139,8 @@ public class  Mapper extends GUI {
 	}
 
 	@Override
-	protected void onLoad(File nodes, File roads, File segments, File polygons) {
-		graph = new Graph(nodes, roads, segments, polygons);
+	protected void onLoad(File nodes, File roads, File segments, File polygons, File restrictions) {
+		graph = new Graph(nodes, roads, segments, polygons, restrictions);
 		origin = new Location(-250, 250); // close enough
 		scale = 1;
 	}
@@ -163,19 +175,18 @@ public class  Mapper extends GUI {
 		tripPanel.setBorder(BorderFactory.createEmptyBorder(0,0,5,0));
 
 		JLabel startLabel = new JLabel("Start"), endLabel = new JLabel("End");
-		// TODO: select start and end
-		JTextField startNode = new JTextField(), endNode = new JTextField();
+
+		startValue = new JTextField();
+		endValue = new JTextField();
+
 		ButtonGroup distanceOrTime = new ButtonGroup();
 		JRadioButton distance = new JRadioButton("Distance"), time = new JRadioButton("Time");
 		JButton findRoute = new JButton("Search");
 
-		startNode.setEnabled(false);
-		endNode.setEnabled(false);
+		startValue.setEnabled(false);
+		endValue.setEnabled(false);
 
-		findRoute.addActionListener(e ->
-			listRoute(graph.nodes.get(Integer.parseInt(startNode.getText())),
-					  graph.nodes.get(Integer.parseInt(endNode.getText()))));
-
+		findRoute.addActionListener(e -> listRoute(start, end));
 		distance.addActionListener(e -> isDistance = true);
 		time.addActionListener(e -> isDistance = false);
 
@@ -185,11 +196,11 @@ public class  Mapper extends GUI {
 
 		tripPanel.add(startLabel);
 		tripPanel.add(Box.createRigidArea(new Dimension(5,0)));
-		tripPanel.add(startNode);
+		tripPanel.add(startValue);
 		tripPanel.add(Box.createRigidArea(new Dimension(15,0)));
 		tripPanel.add(endLabel);
 		tripPanel.add(Box.createRigidArea(new Dimension(5,0)));
-		tripPanel.add(endNode);
+		tripPanel.add(endValue);
 
 		tripPanel.add(Box.createRigidArea(new Dimension(15,0)));
 		tripPanel.add(distance);
@@ -204,13 +215,11 @@ public class  Mapper extends GUI {
 	}
 
 	private Step aStar(Node start, Node end) {
-
 		LinkedList<Step> open = new LinkedList<>(), closed = new LinkedList<>();
 		open.add(new Step(start, end));
 
 		while (open.size() > 0) {
 			Step current = open.stream().min(Comparator.comparingDouble(Step::getF)).get();
-//			System.out.printf("\n%s is minimum of \n%s\n\n", current, open);
 
 			if (current.current == end) {
 				return current;
@@ -241,26 +250,74 @@ public class  Mapper extends GUI {
 	}
 
 	private void listRoute(Node start, Node end) {
-		Stack<Segment> segments = new Stack<>();
+//		StringBuilder directions = new StringBuilder();
+		LinkedList<String> directions = new LinkedList<>();
+		Road latestRoad = null;
+		double totalDist = 0, roadDist = 0, totalTime = 0, roadTime = 0;
+
+		graph.unHighlight();
 		Step curr = aStar(start, end);
+
 		if (curr == null) {
 			System.err.println("A* failed on nodes \n" + start + "\n\n\tand\n\n" + end);
 			return;
 		}
 
 		while (curr.parent != null) {
-			segments.push(curr.toParent);
+			if (curr.toParent.road.equals(latestRoad)) {
+				roadDist += curr.toParent.length;
+				roadTime += roadDist / curr.toParent.road.speed;
+			} else {
+				if (latestRoad != null) {
+					totalDist += roadDist;
+					totalTime += roadTime;
+					directions.add(latestRoad.name
+							+ ": " + String.format("%.2f", roadDist) + "km, "
+							+ String.format("%.4f", roadTime) + "hours\n");
+				}
+
+				latestRoad = curr.toParent.road;
+				roadDist = curr.toParent.length;
+				roadTime = roadDist / curr.toParent.road.speed;
+
+			}
+			graph.addHighlightedSegment(curr.toParent);
+			graph.addHighlightedNode(curr.current);
 			curr = curr.parent;
 		}
 
-		getTextOutputArea().setText("");
+		// User selected 1 length trip
+		if (latestRoad == null) { return; }
 
-		while (!segments.empty()) {
-			Segment s = segments.pop();
-			getTextOutputArea().append(s.road.name + " (" + s.length + ")\n");
+		// Print last step
+		graph.addHighlightedNode(curr.current);
+		directions.add(latestRoad.name
+				+ ": " + String.format("%.2f", roadDist) + "km, "
+				+ String.format("%.4f", roadTime) + "hours\n");
+
+		// Increment the final measurements
+		totalDist += roadDist;
+		totalTime += roadTime;
+
+		getTextOutputArea().setText("");
+		for (int i = directions.size() - 1; i > -1; --i) {
+			getTextOutputArea().append(directions.get(i));
 		}
 
+		getTextOutputArea().append("\nTotal distance = " + String.format("%.2f", totalDist)
+				+ "km, Total time = " + String.format("%.4f", totalTime) + "hours");
+
+		redraw();
+
 	}
+
+/* TODO
+	Incorporate one-way roads into your route finding system, so that a route will never take you
+		the wrong way down a one-way street.
+	Take into account the restriction information.
+	Incorporate traffic light information and prefer routes with fewer traffic lights. (You may
+		have to go and find the data yourself – some exists, but apparently it isn’t very reliable.)
+*/
 
 }
 

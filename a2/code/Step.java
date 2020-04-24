@@ -1,5 +1,4 @@
 import java.util.Comparator;
-import java.util.stream.Collectors;
 
 public class Step {
     Node current;
@@ -19,28 +18,6 @@ public class Step {
         this.h = goal.location.distance(n.location);
 
         if (isDistance) {
-            // Get the distance from the previous node + the distance from the origin to the previous node
-//            System.out.println("\n\n\tTrying to find route from " + n.nodeID + " to " + prev.current.nodeID);
-//
-//            System.out.println("All Segments:" +
-//                    n.segments.stream()
-//                        .map(x -> "[" + x.start.nodeID + ", " + x.end.nodeID + ", (" + x.length + ")]")
-//                        .collect(Collectors.joining()));
-//
-//            System.out.println("Connecting segments: " +
-//                    n.segments.stream()
-//                        .filter(x -> ((x.start == n && x.end == prev.current)
-//                            || (x.end == n && x.start == prev.current)))
-//                        .map(x -> "[" + x.start.nodeID + ", " + x.end.nodeID + ", (" + x.length + ")]")
-//                        .collect(Collectors.joining()));
-//
-//            System.out.println("Min segment: " +
-//                    n.segments.stream()
-//                        .filter(x -> (x.start == n && x.end == prev.current) || (x.end == prev.current && x.end == n))
-//                        .min(Comparator.comparingDouble(x -> x.length))
-//                        .map(x -> "[" + x.start.nodeID + ", " + x.end.nodeID + ", (" + x.length + ")]")
-//                        .orElse(null));
-
             toParent = n.segments.stream()
                     .filter(x -> (x.start == n && x.end == prev.current)
                               || (x.start == prev.current && x.end == n))
@@ -57,7 +34,8 @@ public class Step {
         } else {
             // Get the time of all segments between the two nodes, then get the shortest time of that
             toParent = n.segments.stream()
-                    .filter(x -> (x.start == n && x.end == prev.current) || (x.end == prev.current && x.end == n))
+                    .filter(x -> (x.start == n && x.end == prev.current)
+                              || (x.start == prev.current && x.end == n))
                     .min(Comparator.comparingDouble(x -> x.length/x.road.speed))
                     .orElse(null);
 

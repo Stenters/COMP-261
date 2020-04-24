@@ -80,6 +80,10 @@ public class Road {
 				return Integer.MAX_VALUE;
 		}
 	}
+
+	public boolean equals(Object o) {
+		return o instanceof Road && ((Road) o).name.equals(name);
+	}
 }
 
 // code for COMP261 assignments

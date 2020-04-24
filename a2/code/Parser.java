@@ -1,7 +1,4 @@
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -18,8 +15,8 @@ import java.util.Set;
  */
 public class Parser {
 
-	public static Map<Integer, Node> parseNodes(File nodes, Graph graph) {
-		Map<Integer, Node> map = new HashMap<Integer, Node>();
+	public static Map<Integer, Node> parseNodes(File nodes) {
+		Map<Integer, Node> map = new HashMap<>();
 
 		try {
 			// make a reader
@@ -48,8 +45,8 @@ public class Parser {
 		return map;
 	}
 
-	public static Map<Integer, Road> parseRoads(File roads, Graph graph) {
-		Map<Integer, Road> map = new HashMap<Integer, Road>();
+	public static Map<Integer, Road> parseRoads(File roads) {
+		Map<Integer, Road> map = new HashMap<>();
 
 		try {
 			BufferedReader br = new BufferedReader(new FileReader(roads));
@@ -84,7 +81,7 @@ public class Parser {
 	}
 
 	public static Collection<Segment> parseSegments(File segments, Graph graph) {
-		Set<Segment> set = new HashSet<Segment>();
+		Set<Segment> set = new HashSet<>();
 
 		try {
 			BufferedReader br = new BufferedReader(new FileReader(segments));
@@ -122,6 +119,40 @@ public class Parser {
 
 	private static double asDouble(String str) {
 		return Double.parseDouble(str);
+	}
+
+	public static void parseRestrictions(File restrictions, Graph graph) {
+		if (restrictions == null) { return; }
+
+		try (BufferedReader br = new BufferedReader(new FileReader(restrictions))){
+			String line;
+
+			while((line = br.readLine()) != null) {
+				String[] tokens = line.split("[\t]+");
+
+//				nodeID-1, roadID-1, nodeID, roadID-2, nodeID-2.
+				Node node = graph.nodes.get(asInt(tokens[2])),
+					 startNode = graph.nodes.get(asInt(tokens[1])),
+					 endNode = graph.nodes.get(asInt(tokens[4]));
+
+				Segment start = graph.segments.stream().filter(x->x.road.roadID == asInt(tokens[1])
+															   && x.start == startNode
+															   && x.end == node).findAny().orElse(null),
+						end = graph.segments.stream().filter(x->x.road.roadID == asInt(tokens[3])
+															 && x.start == node
+															 && x.end == endNode).findAny().orElse(null);
+
+				if (start == null || end == null) {
+					System.err.println("Restriction not found");
+					continue;
+				}
+
+				node.addRestriction(start, end);
+
+			}
+		} catch (IOException e) {
+			throw new RuntimeException("File reading failed.");
+		}
 	}
 }
 

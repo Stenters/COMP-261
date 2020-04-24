@@ -42,6 +42,11 @@ public class Segment {
 			g.drawLine(p.x, p.y, q.x, q.y);
 		}
 	}
+
+	@Override
+	public String toString() {
+		return road.name + ": " + String.format("%.2f",length) + "km";
+	}
 }
 
 // code for COMP261 assignments

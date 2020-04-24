@@ -15,6 +15,7 @@ public class Node {
 	public final int nodeID;
 	public final Location location;
 	public final Collection<Segment> segments;
+	public final HashMap<Segment, Segment> restrictedTurns = new HashMap<>();
 
 	public Node(int nodeID, double lat, double lon) {
 		this.nodeID = nodeID;
@@ -35,6 +36,10 @@ public class Node {
 
 		int size = (int) (Mapper.NODE_GRADIENT * Math.log(scale) + Mapper.NODE_INTERCEPT);
 		g.fillRect(p.x - size / 2, p.y - size / 2, size, size);
+	}
+
+	public void addRestriction(Segment start, Segment end) {
+		restrictedTurns.put(start, end);
 	}
 
 	public String toString() {

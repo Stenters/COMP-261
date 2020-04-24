@@ -92,7 +92,7 @@ public abstract class GUI {
 	 *            a File for polygon-shapes.mp
 	 */
 	protected abstract void onLoad(File nodes, File roads, File segments,
-			File polygons);
+			File polygons, File restrictions);
 
 	// here are some useful methods you'll need.
 
@@ -133,7 +133,7 @@ public abstract class GUI {
 	// assignment up to and including completion.
 	// --------------------------------------------------------------------
 
-	private static final boolean UPDATE_ON_EVERY_CHARACTER = false;
+	private static final boolean UPDATE_ON_EVERY_CHARACTER = true;
 
 	private static final int DEFAULT_DRAWING_HEIGHT = 400;
 	private static final int DEFAULT_DRAWING_WIDTH = 400;
@@ -144,6 +144,7 @@ public abstract class GUI {
 	private static final String ROADS_FILENAME = "roadID-roadInfo.tab";
 	private static final String SEGS_FILENAME = "roadSeg-roadID-length-nodeID-nodeID-coords.tab";
 	private static final String POLYS_FILENAME = "polygon-shapes.mp";
+	private static final String RESTRICTIONS_FILENAME = "restrictions.tab";
 
 	/*
 	 * In Swing, everything is a component; buttons, graphics panes, tool tips,
@@ -192,7 +193,7 @@ public abstract class GUI {
 		JButton load = new JButton("Load");
 		load.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent ev) {
-				File nodes = null, roads = null, segments = null, polygons = null;
+				File nodes = null, roads = null, segments = null, polygons = null, restrictions = null;
 
 				// set up the file chooser
 				fileChooser.setCurrentDirectory(new File("."));
@@ -215,6 +216,8 @@ public abstract class GUI {
 							segments = f;
 						} else if (f.getName().equals(POLYS_FILENAME)) {
 							polygons = f;
+						} else if (f.getName().equals(RESTRICTIONS_FILENAME)) {
+							restrictions = f;
 						}
 					}
 
@@ -225,7 +228,7 @@ public abstract class GUI {
 								"Directory does not contain correct files",
 								"Error", JOptionPane.ERROR_MESSAGE);
 					} else {
-						onLoad(nodes, roads, segments, polygons);
+						onLoad(nodes, roads, segments, polygons, restrictions);
 						redraw();
 					}
 				}
