@@ -314,11 +314,11 @@ public class  Mapper extends GUI {
 
 	}
 
-/* TODO
-	Incorporate one-way roads into your route finding system, so that a route will never take you
-		the wrong way down a one-way street.
+/*
+TODO
 	Incorporate traffic light information and prefer routes with fewer traffic lights. (You may
 		have to go and find the data yourself – some exists, but apparently it isn’t very reliable.)
+	Format times better
 */
 
 }

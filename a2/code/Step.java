@@ -19,7 +19,7 @@ public class Step {
 
         if (isDistance) {
             toParent = n.segments.stream()
-                    .filter(x -> (x.start == n && x.end == prev.current)
+                    .filter(x -> (x.start == n && x.end == prev.current && !x.road.isOneway)
                               || (x.start == prev.current && x.end == n))
                     .min(Comparator.comparingDouble(x -> x.length))
                     .orElse(null);
@@ -34,7 +34,7 @@ public class Step {
         } else {
             // Get the time of all segments between the two nodes, then get the shortest time of that
             toParent = n.segments.stream()
-                    .filter(x -> (x.start == n && x.end == prev.current)
+                    .filter(x -> (x.start == n && x.end == prev.current && !x.road.isOneway)
                               || (x.start == prev.current && x.end == n))
                     .min(Comparator.comparingDouble(x -> x.length/x.road.speed))
                     .orElse(null);
