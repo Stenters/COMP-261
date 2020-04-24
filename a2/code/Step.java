@@ -18,26 +18,23 @@ public class Step {
         this.h = goal.location.distance(n.location);
 
         if (isDistance) {
-            toParent = n.segments.stream()
-                    .filter(x -> (x.start == n && x.end == prev.current && !x.road.isOneway)
-                              || (x.start == prev.current && x.end == n))
-                    .min(Comparator.comparingDouble(x -> x.length))
-                    .orElse(null);
+            toParent = n.getConnecting(prev.current).stream()
+                        .min(Comparator.comparingDouble(x -> x.length))
+                        .orElse(null);
 
             // Should never happen
             if (toParent == null) {
                 System.err.println("min dist segment is null for nodes:\n" + n + "\n\n" + prev.current + "\n");
+                System.err.println("Connecting segments:\n" + n.getConnecting(prev.current) );
             }
 
             g = prev.g + toParent.length;
 
         } else {
             // Get the time of all segments between the two nodes, then get the shortest time of that
-            toParent = n.segments.stream()
-                    .filter(x -> (x.start == n && x.end == prev.current && !x.road.isOneway)
-                              || (x.start == prev.current && x.end == n))
-                    .min(Comparator.comparingDouble(x -> x.length/x.road.speed))
-                    .orElse(null);
+            toParent = n.getConnecting(prev.current).stream()
+                        .min(Comparator.comparingDouble(x -> x.length/x.road.speed))
+                        .orElse(null);
 
             // Should never happen
             if (toParent == null) {

@@ -125,12 +125,12 @@ public class Parser {
 		if (restrictions == null) { return; }
 
 		try (BufferedReader br = new BufferedReader(new FileReader(restrictions))){
-			String line;
+			String line = br.readLine();
 
 			while((line = br.readLine()) != null) {
 				String[] tokens = line.split("[\t]+");
 
-				graph.nodes.get(asInt(tokens[3])).addRestriction(graph.nodes.get(asInt(tokens[1])), graph.nodes.get(asInt(tokens[4])));
+				graph.nodes.get(asInt(tokens[2])).addRestriction(graph.nodes.get(asInt(tokens[0])), graph.nodes.get(asInt(tokens[4])));
 
 			}
 		} catch (IOException e) {

@@ -2,6 +2,7 @@ import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Point;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Node represents an intersection in the road graph. It stores its ID and its
@@ -67,6 +68,13 @@ public class Node {
 		}
 
 		return nodes;
+	}
+
+	public List<Segment> getConnecting(Node other) {
+		return segments.stream()
+				.filter(x -> (x.start == this && x.end == other && !x.road.isOneway)
+						  || (x.start == other && x.end == this))
+				.collect(Collectors.toList());
 	}
 
 	@Override

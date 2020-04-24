@@ -56,6 +56,7 @@ public class  Mapper extends GUI {
 
 	@Override
 	protected void onClick(MouseEvent e) {
+		graph.unHighlight();
 		Location clicked = Location.newFromPoint(e.getPoint(), origin, scale);
 		// find the closest node.
 		double bestDist = Double.MAX_VALUE;
@@ -99,11 +100,13 @@ public class  Mapper extends GUI {
 
 	@Override
 	protected void onSearch() {
+		graph.unHighlight();
 		String text = getSearchBox().getText();
 		getTextOutputArea().setText("");
 		for (Node n : graph.nodes.values()){
 			if (String.valueOf(n.nodeID).contains(text)) {
 				getTextOutputArea().append(n + "\n");
+				graph.addHighlightedNode(n);
 			}
 		}
 
@@ -212,6 +215,8 @@ public class  Mapper extends GUI {
 		frame.add(tripPanel, BorderLayout.CENTER);
 		frame.pack();
 		frame.setVisible(true);
+
+		getTextOutputArea().setText("Right click to select nodes to search from");
 	}
 
 	private Step aStar(Node start, Node end) {
@@ -226,8 +231,9 @@ public class  Mapper extends GUI {
 			}
 
 			for(Node n : current.current.getNeighbors()) {
-				// Skip node if coming from restricted turn
-				if (n.equals(current.current.restrictedNodes.get(current.parent))) { continue; }
+				// Skip node if coming from restricted turn or is one way
+				if (n.equals(current.current.restrictedNodes.get(current.parent))
+				 	|| n.getConnecting(current.current).size() == 0) { continue; }
 
 				Step nextStep = new Step(n, current, end, isDistance);
 
@@ -276,7 +282,7 @@ public class  Mapper extends GUI {
 					totalTime += roadTime;
 					directions.add(latestRoad.name
 							+ ": " + String.format("%.2f", roadDist) + "km, "
-							+ String.format("%.4f", roadTime) + "hours\n");
+							+ formatTime(roadTime) + "\n");
 				}
 
 				latestRoad = curr.toParent.road;
@@ -296,7 +302,7 @@ public class  Mapper extends GUI {
 		graph.addHighlightedNode(curr.current);
 		directions.add(latestRoad.name
 				+ ": " + String.format("%.2f", roadDist) + "km, "
-				+ String.format("%.4f", roadTime) + "hours\n");
+				+ formatTime(roadTime) + "\n");
 
 		// Increment the final measurements
 		totalDist += roadDist;
@@ -308,17 +314,22 @@ public class  Mapper extends GUI {
 		}
 
 		getTextOutputArea().append("\nTotal distance = " + String.format("%.2f", totalDist)
-				+ "km, Total time = " + String.format("%.4f", totalTime) + "hours");
+				+ "km, Total time = " + formatTime(totalTime));
 
 		redraw();
 
 	}
 
+	private static String formatTime(double hours) {
+		int hoursValue = (int) hours;
+		int minutesValue = (int) (hours * 60 % 60);
+		int secondsValue = (int) (hours * 36000 % 60);
+		return hoursValue + ":" + minutesValue + ":" + secondsValue;
+	}
 /*
 TODO
 	Incorporate traffic light information and prefer routes with fewer traffic lights. (You may
 		have to go and find the data yourself – some exists, but apparently it isn’t very reliable.)
-	Format times better
 */
 
 }
