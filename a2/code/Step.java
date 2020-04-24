@@ -25,7 +25,6 @@ public class Step {
             // Should never happen
             if (toParent == null) {
                 System.err.println("min dist segment is null for nodes:\n" + n + "\n\n" + prev.current + "\n");
-                System.err.println("Connecting segments:\n" + n.getConnecting(prev.current) );
             }
 
             g = prev.g + toParent.length;
