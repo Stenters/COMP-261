@@ -326,12 +326,6 @@ public class  Mapper extends GUI {
 		int secondsValue = (int) (hours * 36000 % 60);
 		return hoursValue + ":" + minutesValue + ":" + secondsValue;
 	}
-/*
-TODO
-	Incorporate traffic light information and prefer routes with fewer traffic lights. (You may
-		have to go and find the data yourself – some exists, but apparently it isn’t very reliable.)
-*/
-
 }
 
 // code for COMP261 assignments
