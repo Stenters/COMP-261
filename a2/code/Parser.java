@@ -130,24 +130,7 @@ public class Parser {
 			while((line = br.readLine()) != null) {
 				String[] tokens = line.split("[\t]+");
 
-//				nodeID-1, roadID-1, nodeID, roadID-2, nodeID-2.
-				Node node = graph.nodes.get(asInt(tokens[2])),
-					 startNode = graph.nodes.get(asInt(tokens[1])),
-					 endNode = graph.nodes.get(asInt(tokens[4]));
-
-				Segment start = graph.segments.stream().filter(x->x.road.roadID == asInt(tokens[1])
-															   && x.start == startNode
-															   && x.end == node).findAny().orElse(null),
-						end = graph.segments.stream().filter(x->x.road.roadID == asInt(tokens[3])
-															 && x.start == node
-															 && x.end == endNode).findAny().orElse(null);
-
-				if (start == null || end == null) {
-					System.err.println("Restriction not found");
-					continue;
-				}
-
-				node.addRestriction(start, end);
+				graph.nodes.get(asInt(tokens[3])).addRestriction(graph.nodes.get(asInt(tokens[1])), graph.nodes.get(asInt(tokens[4])));
 
 			}
 		} catch (IOException e) {

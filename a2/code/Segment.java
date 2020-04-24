@@ -47,6 +47,11 @@ public class Segment {
 	public String toString() {
 		return road.name + ": " + String.format("%.2f",length) + "km";
 	}
+
+	@Override
+	public boolean equals(Object o) {
+		return o instanceof Segment && ((Segment) o).road == road && ((Segment) o).start == start && ((Segment) o).end == end;
+	}
 }
 
 // code for COMP261 assignments

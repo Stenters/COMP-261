@@ -226,6 +226,9 @@ public class  Mapper extends GUI {
 			}
 
 			for(Node n : current.current.getNeighbors()) {
+				// Skip node if coming from restricted turn
+				if (n.equals(current.current.restrictedNodes.get(current.parent))) { continue; }
+
 				Step nextStep = new Step(n, current, end, isDistance);
 
 				// Comparator is overridden, so only looks for Step objects with the same current node
@@ -314,7 +317,6 @@ public class  Mapper extends GUI {
 /* TODO
 	Incorporate one-way roads into your route finding system, so that a route will never take you
 		the wrong way down a one-way street.
-	Take into account the restriction information.
 	Incorporate traffic light information and prefer routes with fewer traffic lights. (You may
 		have to go and find the data yourself – some exists, but apparently it isn’t very reliable.)
 */

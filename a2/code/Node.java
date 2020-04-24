@@ -15,7 +15,7 @@ public class Node {
 	public final int nodeID;
 	public final Location location;
 	public final Collection<Segment> segments;
-	public final HashMap<Segment, Segment> restrictedTurns = new HashMap<>();
+	public final HashMap<Node, Node> restrictedNodes = new HashMap<>();
 
 	public Node(int nodeID, double lat, double lon) {
 		this.nodeID = nodeID;
@@ -38,8 +38,8 @@ public class Node {
 		g.fillRect(p.x - size / 2, p.y - size / 2, size, size);
 	}
 
-	public void addRestriction(Segment start, Segment end) {
-		restrictedTurns.put(start, end);
+	public void addRestriction(Node start, Node end) {
+		restrictedNodes.put(start, end);
 	}
 
 	public String toString() {
@@ -69,6 +69,10 @@ public class Node {
 		return nodes;
 	}
 
+	@Override
+	public boolean equals(Object o) {
+		return o instanceof Node && ((Node) o).nodeID == nodeID;
+	}
 }
 
 // code for COMP261 assignments
