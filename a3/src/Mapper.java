@@ -4,8 +4,7 @@ import java.awt.Graphics;
 import java.awt.Point;
 import java.awt.event.MouseEvent;
 import java.io.File;
-import java.util.Collection;
-import java.util.HashSet;
+import java.util.*;
 
 /**
  * This is the main class for the mapping program. It extends the GUI abstract
@@ -44,6 +43,9 @@ public class Mapper extends GUI {
 	// our data structures.
 	private Graph graph;
 
+	private Map<Integer, Boolean> visitedNodes;
+	private Map<Integer, Integer> nodeDepths;
+
 	@Override
 	protected void redraw(Graphics g) {
 		if (graph != null)
@@ -67,7 +69,7 @@ public class Mapper extends GUI {
 
 		// if it's close enough, highlight it and show some information.
 		if (clicked.distance(closest.location) < MAX_CLICKED_DISTANCE) {
-			graph.setHighlight(closest);
+			graph.setHighlightedNode(closest);
 			getTextOutputArea().setText(closest.toString());
 		}
 	}
@@ -131,12 +133,142 @@ public class Mapper extends GUI {
 		new Mapper();
 	}
 
-	public static void highlightArticulationPoints() {
-		// TODO
+	public void highlightArticulationPoints() {
+		List<Node> APs = new LinkedList<>();
+		for (Graph g: getComponents()) {
+			Node start = g.nodes.entrySet().iterator().next().getValue();
+			APs.addAll(DFS(start));
+		}
+
+		graph.setHighlightedNodes(APs);
 	}
 
 	public static void highlightMinimumSpanningTrees() {
 		// TODO
+	}
+
+	public List<Node> DFS(Node root) {
+		List<Node> APs = new LinkedList<>();
+		int numSubTrees = 0;
+
+		for (Node n : root.getNeighbors()) {
+			if (isUnvisited(n.nodeID)){
+				APs.addAll(getAPs(n, root));
+				numSubTrees++;
+			}
+		}
+		if (numSubTrees > 1) {
+			APs.add(root);
+		}
+
+		return APs;
+	}
+
+	private List<Node> getAPs(Node startingNode, Node root) {
+		int depth = 1;
+		List<Node> APs = new LinkedList<>();
+		Stack<NodeElement> nodesToCheck = new Stack<>();
+
+		// Initialize the stack
+		nodesToCheck.push(new NodeElement(startingNode, depth, root));
+
+		// Iterate over all nodes in the subtree
+		while (!nodesToCheck.empty()) {
+			// Node to work with
+			NodeElement element = nodesToCheck.peek();
+
+			// First time visiting this node, initialize it
+			if (isUnvisited(element.node.nodeID)) {
+				// Set visited and reachback
+				setVisited(element.node.nodeID);
+				element.node.reachBack = depth;
+				setDepth(element.node.nodeID, depth);
+				// Set children
+				Set<Node> neighbors = element.node.getNeighbors();
+				neighbors.removeIf(e -> e.equals(element.parent));
+				element.addChildren(neighbors);
+
+			// Not done with this node yet, process one child
+			} else if (!element.children.empty()) {
+				Node child = element.popChild();
+				// If you haven't visited a node, add it to the stack of nodes to check
+				if (isUnvisited(child.nodeID)) {
+					nodesToCheck.push(
+							new NodeElement(child,
+									getDepth(element.node.nodeID) +1,
+									element.node));
+				// You've already visited this node, your reachback cannot exceed its
+				//	reachback
+				} else {
+					element.node.reachBack = Math.min(element.node.reachBack,
+							getDepth(child.nodeID));
+				}
+
+			// All the node's children have been processed, process this node
+			} else {
+				// Ignore the starting node
+				if (!element.node.equals(startingNode)){
+					// Update the parent's reachback if this one's better
+					element.parent.reachBack = Math.min(element.node.reachBack,
+							element.parent.reachBack);
+					// If you can't reach a node above the parent, you need the parent
+					//	and it is an articulation point
+					if (element.node.reachBack >= getDepth(element.parent.nodeID)) {
+						APs.add(element.parent);
+					}
+				}
+				// Finished processing this node
+				nodesToCheck.pop();
+			}
+
+		}
+
+		return APs;
+	}
+
+	private boolean isUnvisited(int id) {
+		return visitedNodes.containsKey(id) && visitedNodes.get(id);
+	}
+
+	private void setVisited(int id) {
+		visitedNodes.put(id, true);
+	}
+
+	private void setDepth(int id, int depth) {
+		nodeDepths.put(id, depth);
+	}
+
+	private int getDepth(int id) {
+		if (nodeDepths.containsKey(id)) {
+			return nodeDepths.get(id);
+		}
+		return -1;
+	}
+
+	private static class NodeElement {
+		Node node, parent;
+		Stack<Node> children = new Stack<>();
+
+		NodeElement(Node node, int depth, Node parent) {
+			this.node = node;
+			this.parent = parent;
+		}
+
+		public void addChildren(Set<Node> n) {
+			children.addAll(n);
+		}
+
+		public Node popChild() {
+			return children.pop();
+		}
+	}
+
+	private List<Graph> getComponents() {
+		LinkedList<Graph> components = new LinkedList<>();
+
+		//TODO: Kosaraju
+
+		return components;
 	}
 
 }

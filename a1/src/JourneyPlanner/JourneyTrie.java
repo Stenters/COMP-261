@@ -1,6 +1,6 @@
 package JourneyPlanner;
 
-import com.sun.istack.internal.Nullable;
+//import com.sun.istack.internal.Nullable;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -62,7 +62,6 @@ public class JourneyTrie {
             stops = new ArrayList<>();
         }
 
-        @Nullable
         public Node getChild(char data) {
             return children.stream().filter( x -> x.data == data ).findFirst().orElse(null);
         }

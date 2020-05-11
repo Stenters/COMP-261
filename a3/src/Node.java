@@ -1,9 +1,7 @@
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Point;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Node represents an intersection in the road graph. It stores its ID and its
@@ -17,11 +15,12 @@ public class Node {
 	public final int nodeID;
 	public final Location location;
 	public final Collection<Segment> segments;
+	public int reachBack = 0;
 
 	public Node(int nodeID, double lat, double lon) {
 		this.nodeID = nodeID;
 		this.location = Location.newFromLatLon(lat, lon);
-		this.segments = new HashSet<Segment>();
+		this.segments = new HashSet<>();
 	}
 
 	public void addSegment(Segment seg) {
@@ -40,18 +39,38 @@ public class Node {
 	}
 
 	public String toString() {
-		Set<String> edges = new HashSet<String>();
+		Set<String> edges = new HashSet<>();
 		for (Segment s : segments) {
-			if (!edges.contains(s.road.name))
-				edges.add(s.road.name);
+			edges.add(s.road.name);
 		}
 
-		String str = "ID: " + nodeID + "  loc: " + location + "\nroads: ";
+		StringBuilder str =
+				new StringBuilder("ID: " + nodeID + "  loc: " + location + "\nroads: ");
 		for (String e : edges) {
-			str += e + ", ";
+			str.append(e).append(", ");
 		}
 		return str.substring(0, str.length() - 2);
 	}
+
+	public Set<Node> getNeighbors() {
+		Set<Node> neighbors = new HashSet<>();
+
+		for(Segment s : segments) {
+			if (s.start.equals(this)) {
+				neighbors.add(s.end);
+			} else {
+				neighbors.add(s.start);
+			}
+		}
+
+		return neighbors;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		return o instanceof Node && this.nodeID == ((Node) o).nodeID;
+	}
+
 }
 
 // code for COMP261 assignments
