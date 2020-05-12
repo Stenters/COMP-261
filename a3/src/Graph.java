@@ -24,12 +24,18 @@ public class Graph {
 	Collection<Segment> segments;
 
 	Collection<Node> highlightedNodes = new HashSet<>();
-	Collection<Road> highlightedRoads = new HashSet<>();
+	Collection<Segment> highlightedSegments = new HashSet<>();
 
 	public Graph(File nodes, File roads, File segments, File polygons) {
 		this.nodes = ParserStream.parseNodes(nodes, this);
 		this.roads = ParserStream.parseRoads(roads, this);
 		this.segments = ParserStream.parseSegments(segments, this);
+	}
+
+	public Graph(Map<Integer, Node> nodes, Map<Integer, Road> roads, Collection<Segment> segments) {
+		this.nodes = nodes;
+		this.roads = roads;
+		this.segments = segments;
 	}
 
 	public void draw(Graphics g, Dimension screen, Location origin, double scale) {
@@ -47,10 +53,9 @@ public class Graph {
 		// draw the segments of all highlighted roads.
 		g2.setColor(Mapper.HIGHLIGHT_COLOUR);
 		g2.setStroke(new BasicStroke(3));
-		for (Road road : highlightedRoads) {
-			for (Segment seg : road.components) {
-				seg.draw(g2, origin, scale);
-			}
+
+		for (Segment s : highlightedSegments) {
+			s.draw(g2, origin, scale);
 		}
 
 		// draw all the nodes.
@@ -68,12 +73,8 @@ public class Graph {
 	public void setHighlightedNodes(Collection<Node> nodes) {
 		this.highlightedNodes = nodes;
 	}
-	public void setHighlightedRoads(Collection<Road> roads) {
-		this.highlightedRoads = roads;
-	}
-
+	public void setHighlightedSegments(Collection<Segment> segments) { this.highlightedSegments = segments;}
 	public void setHighlightedNode(Node node) {
-		this.highlightedNodes = new HashSet<>();
 		this.highlightedNodes.add(node);
 	}
 }

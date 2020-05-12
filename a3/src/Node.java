@@ -72,6 +72,10 @@ public class Node {
 		return o instanceof Node && this.nodeID == ((Node) o).nodeID;
 	}
 
+	public Segment getShortestSegment(Node n) {
+		return segments.stream().filter(s -> (s.start == this && s.end == n) || (s.end == this && s.start == n))
+				.min(Comparator.comparingDouble(x -> x.length)).orElse(null);
+	}
 }
 
 // code for COMP261 assignments

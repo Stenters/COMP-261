@@ -78,7 +78,7 @@ public class Mapper extends GUI {
 
 			Node finalClosest = closest; // BC how Java handles variables in lambdas
 			artPtItem.addActionListener(e1 -> highlightArticulationPoints(finalClosest));
-			minTreeItem.addActionListener(e1 -> highlightMinimumSpanningTrees(finalClosest));
+			minTreeItem.addActionListener(e1 -> highlightMinimumSpanningTrees());
 
 			context.add(artPtItem);
 			context.add(minTreeItem);
@@ -169,19 +169,28 @@ public class Mapper extends GUI {
 
 	public void highlightArticulationPoints(Node root) {
 		List<Node> APs = new LinkedList<>(DFS(root));
+
+		// TODO: fix extra node on large data set
+
+//		for(Node n : graph.nodes.values()) {
+//			APs.addAll(DFS(n));
+//		}
+
 		graph.setHighlightedNodes(APs);
 
 		getTextOutputArea().setText("Number of Articulation points: " + APs.size() + "\n");
-		System.out.println("APS: " + APs.size());
-		System.out.println("Nodes length: " + graph.nodes.size());
 
-		List<Integer> nonIDs = graph
-				.nodes
-				.keySet()
-				.stream()
-				.filter(x -> !APs.stream().map(y -> y.nodeID).collect(Collectors.toList()).contains(x))
-				.collect(Collectors.toList());
-		System.out.println(nonIDs.size() + " non aps");
+		List<Integer> apids = APs.stream().map(x -> x.nodeID).collect(Collectors.toList());
+		int numAP = 0, numNotAP = 0;
+		for (Node n : graph.nodes.values()) {
+			if (apids.contains(n.nodeID)) {
+				numAP++;
+			} else {
+				numNotAP++;
+			}
+		}
+
+		System.out.printf("Total: %d\tNumAP: %d\tNumNotAP: %d\n", graph.nodes.size(), numAP, numNotAP);
 
 		for(Node n : APs) {
 			getTextOutputArea().append(n.toString() + "\n");
@@ -189,11 +198,23 @@ public class Mapper extends GUI {
 
 	}
 
-	public void highlightMinimumSpanningTrees(Node start) {
-		// TODO
-		System.out.println("Starting at " + start);
-		List<Graph> comps = getComponents();
-		System.out.println(comps);
+	public void highlightMinimumSpanningTrees() {
+		Collection<Node> nodesToHighlight = new HashSet<>();
+		Collection<Segment> segmentsToHighlight = new HashSet<>();
+		int iterations = 0;
+
+		for(TreeNode tn : getMST()) {
+			Collection<Segment> children = tn.getAllSegments();
+			System.out.println(iterations++ + ": #edges in MST = " + children.size());
+
+			nodesToHighlight.addAll(tn.getAllChildren());
+			segmentsToHighlight.addAll(tn.getAllSegments());
+
+
+		}
+
+		graph.setHighlightedNodes(nodesToHighlight);
+		graph.setHighlightedSegments(segmentsToHighlight);
 	}
 
 	/* DFS & APs */
@@ -205,7 +226,7 @@ public class Mapper extends GUI {
 		for (Node n : root.getNeighbors()) {
 			if (isUnvisited(n.nodeID)){
 				APs.addAll(getAPs(n, root));
-				numSubTrees++;
+				++numSubTrees;
 			}
 		}
 
@@ -215,8 +236,6 @@ public class Mapper extends GUI {
 
 		return APs;
 	}
-
-	int iterations = 0;
 
 	private List<Node> getAPs(Node startingNode, Node root) {
 		List<Node> APs = new LinkedList<>();
@@ -265,8 +284,8 @@ public class Mapper extends GUI {
 
 					// If you can't reach a node above the parent, you need the parent
 					//	and it is an articulation point
-					if (element.node.reachBack >= getDepth(element.parent.nodeID)) {
-						System.out.println("Adding " + iterations++ + "th ap");
+					if (element.node.reachBack >= getDepth(element.parent.nodeID) && !APs.contains(element.parent)) {
+
 						APs.add(element.parent);
 					}
 				}
@@ -321,41 +340,146 @@ public class Mapper extends GUI {
 
 	/* MST */
 
-	private List<Graph> getComponents() {
-		//TODO: Kosaraju
-		return null;
+	private Set<TreeNode> getMST() {
+		Set<TreeNode> forest = new HashSet<>();
+		PriorityQueue<FringeElement> fringe = new PriorityQueue<>();
+
+		for(Node n : graph.nodes.values()) {
+			TreeNode tn = new TreeNode(n);
+			forest.add(tn);
+
+			for (Node m : n.getNeighbors()) {
+				TreeNode tm = new TreeNode(m);
+
+				// If m was processed first, the edge is already recorded and we can skip
+				if (forest.contains(tm)) { continue; }
+
+				// If not, add the edge to the fringe
+				fringe.add(new FringeElement(tn,tm,n.getShortestSegment(m)));
+			}
+		}
+
+		while (forest.size() > 1) {
+			FringeElement element = fringe.poll();
+
+			// If we run out of sides, return the forest
+			if (element == null) {
+				return forest;
+			} else {
+				TreeNode parentA = element.a.getParent(), parentB = element.b.getParent();
+
+				// If in the same set, skip
+				if (parentA.equals(parentB)) { continue; }
+
+				// Else, merge the shallower one into the deeper one
+				// 	and remove the element from the forest
+				if (element.a.depth > element.b.depth) {
+					parentA.setParentAndToParent(parentB, element.edge);
+					forest.remove(element.a);
+				} else {
+					parentB.setParentAndToParent(parentA, element.edge);
+					forest.remove(element.b);
+				}
+			}
+		}
+
+		return forest;
+	}
+
+	private static class FringeElement implements Comparable<FringeElement> {
+		TreeNode a,b;
+		Segment edge;
+
+		FringeElement(TreeNode a, TreeNode b, Segment edge) {
+			if (edge == null) {
+				System.err.println("edge null between " + a.data + " and " + b.data);
+			}
+
+			this.a = a;
+			this.b = b;
+			this.edge = edge;
+		}
+
+		@Override
+		public int compareTo(FringeElement o) {
+			return Double.compare(edge.length, o.edge.length);
+		}
+	}
+
+	private static class TreeNode {
+		TreeNode parent;
+		Node data;
+		int depth;
+		Set<TreeNode> children = new HashSet<>();
+		Segment toParent = null;
+
+		TreeNode(Node n) {
+			data = n;
+			parent = this;
+			depth = 0;
+		}
+
+		public TreeNode getParent() {
+			if (data.equals(parent.data)) {
+				return this;
+			} else {
+				return parent.getParent();
+			}
+		}
+
+		public void setParentAndToParent(TreeNode parent, Segment toParent) {
+			this.parent = parent;
+			this.depth = parent.depth + 1;
+			parent.children.add(this);
+			this.toParent = toParent;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			return o instanceof TreeNode && ((TreeNode) o).data == data;
+		}
+
+		public Collection<Node> getAllChildren() {
+			Collection<Node> nodes = new HashSet<>();
+			nodes.add(data);
+			for (TreeNode tn : children) {
+				nodes.addAll(tn.getAllChildren());
+			}
+
+			return nodes;
+		}
+
+		public Collection<Segment> getAllSegments() {
+			Collection<Segment> segments = new HashSet<>();
+
+			if (toParent != null) { segments.add(toParent); }
+			for (TreeNode tn : children) {
+				segments.addAll(tn.getAllSegments());
+			}
+
+			return segments;
+		}
 	}
 
 }
 
 /*
 TODO
-	Articulation points
-		Undirected
-		No restrictions
-		Can be disconnected
-	Minimum spanning tree
-		Undirected
-		No restrictions
-		Minimizes total length of tree
-		Can be disconnected
+	Report
+		including pseudocode
 	Minimum
-		Node.getAdj()
-		highlightArticulationPoints()
-			recursive or iterative (ext pts)
-			support disconnected
-			pseudocode in report
+		Finds articulation points in one component
+		Displays art pts
+		report w/ pseudocode
+		all components
 	Core
-		Node.getWeightedAdj()
-		getMinSpanTree()
-			Prim's algorithm vs Kruskal's algorithm (ext pts w/ disjoint set)
-			support disconnected
-			pseudocode in report
+		MST 1 component
+		report w/ pseudocode
+		all components
 	Completion
 		questions
 	Challenge
-		Use iterative
-		use disjoint w/ Kruskal
- */
+		question abt fft
+  */
 
 // code for COMP261 assignments
