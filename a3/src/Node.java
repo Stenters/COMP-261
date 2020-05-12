@@ -39,17 +39,18 @@ public class Node {
 	}
 
 	public String toString() {
-		Set<String> edges = new HashSet<>();
-		for (Segment s : segments) {
-			edges.add(s.road.name);
-		}
-
-		StringBuilder str =
-				new StringBuilder("ID: " + nodeID + "  loc: " + location + "\nroads: ");
-		for (String e : edges) {
-			str.append(e).append(", ");
-		}
-		return str.substring(0, str.length() - 2);
+		return "ID: " + nodeID + " loc: " + location;
+//		Set<String> edges = new HashSet<>();
+//		for (Segment s : segments) {
+//			edges.add(s.road.name);
+//		}
+//
+//		StringBuilder str =
+//				new StringBuilder("ID: " + nodeID + "  loc: " + location + "\nroads: ");
+//		for (String e : edges) {
+//			str.append(e).append(", ");
+//		}
+//		return str.substring(0, str.length() - 2);
 	}
 
 	public Set<Node> getNeighbors() {

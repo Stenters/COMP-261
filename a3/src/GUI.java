@@ -170,7 +170,7 @@ public abstract class GUI {
 	}
 
 	@SuppressWarnings("serial")
-	private void initialise() {
+	protected void initialise() {
 
 		/*
 		 * first, we make the buttons etc. that go along the top bar.

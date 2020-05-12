@@ -1,3 +1,4 @@
+import javax.swing.*;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
@@ -5,6 +6,7 @@ import java.awt.Point;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * This is the main class for the mapping program. It extends the GUI abstract
@@ -43,8 +45,8 @@ public class Mapper extends GUI {
 	// our data structures.
 	private Graph graph;
 
-	private Map<Integer, Boolean> visitedNodes;
-	private Map<Integer, Integer> nodeDepths;
+	private final Collection<Integer> visitedNodes = new HashSet<>();
+	private final Map<Integer, Integer> nodeDepths = new HashMap<>();
 
 	@Override
 	protected void redraw(Graphics g) {
@@ -64,11 +66,27 @@ public class Mapper extends GUI {
 			if (distance < bestDist) {
 				bestDist = distance;
 				closest = node;
-			}z
+			}
+		}
+
+		if (SwingUtilities.isRightMouseButton(e)) {
+			JPopupMenu context = new JPopupMenu();
+			JMenuItem artPtItem = new JMenuItem("Highlight Articulation Points" +
+					" connected to this node"),
+					minTreeItem = new JMenuItem("Highlight the minimum spanning tree" +
+							" connected to this node");
+
+			Node finalClosest = closest; // BC how Java handles variables in lambdas
+			artPtItem.addActionListener(e1 -> highlightArticulationPoints(finalClosest));
+			minTreeItem.addActionListener(e1 -> highlightMinimumSpanningTrees(finalClosest));
+
+			context.add(artPtItem);
+			context.add(minTreeItem);
+			context.show(e.getComponent(), e.getX(), e.getY());
 		}
 
 		// if it's close enough, highlight it and show some information.
-		if (clicked.distance(closest.location) < MAX_CLICKED_DISTANCE) {
+		if (closest != null && clicked.distance(closest.location) < MAX_CLICKED_DISTANCE) {
 			graph.setHighlightedNode(closest);
 			getTextOutputArea().setText(closest.toString());
 		}
@@ -133,19 +151,52 @@ public class Mapper extends GUI {
 		new Mapper();
 	}
 
-	public void highlightArticulationPoints() {
-		List<Node> APs = new LinkedList<>();
-		for (Graph g: getComponents()) {
-			Node start = g.nodes.entrySet().iterator().next().getValue();
-			APs.addAll(DFS(start));
+	@Override
+	protected void initialise() {
+		super.initialise();
+
+		getTextOutputArea().setText("Right click to highlight articulation points"
+			+ " or minimum spanning tree");
+
+		onLoad(new File("./data/small/nodeID-lat-lon.tab"),
+				new File("./data/small/roadID-roadInfo.tab"),
+				new File("./data/small/roadSeg-roadID-length-nodeID-nodeID-coords.tab"),
+				null);
+		redraw();
+	}
+
+	/* GUI Methods */
+
+	public void highlightArticulationPoints(Node root) {
+		List<Node> APs = new LinkedList<>(DFS(root));
+		graph.setHighlightedNodes(APs);
+
+		getTextOutputArea().setText("Number of Articulation points: " + APs.size() + "\n");
+		System.out.println("APS: " + APs.size());
+		System.out.println("Nodes length: " + graph.nodes.size());
+
+		List<Integer> nonIDs = graph
+				.nodes
+				.keySet()
+				.stream()
+				.filter(x -> !APs.stream().map(y -> y.nodeID).collect(Collectors.toList()).contains(x))
+				.collect(Collectors.toList());
+		System.out.println(nonIDs.size() + " non aps");
+
+		for(Node n : APs) {
+			getTextOutputArea().append(n.toString() + "\n");
 		}
 
-		graph.setHighlightedNodes(APs);
 	}
 
-	public static void highlightMinimumSpanningTrees() {
+	public void highlightMinimumSpanningTrees(Node start) {
 		// TODO
+		System.out.println("Starting at " + start);
+		List<Graph> comps = getComponents();
+		System.out.println(comps);
 	}
+
+	/* DFS & APs */
 
 	public List<Node> DFS(Node root) {
 		List<Node> APs = new LinkedList<>();
@@ -157,6 +208,7 @@ public class Mapper extends GUI {
 				numSubTrees++;
 			}
 		}
+
 		if (numSubTrees > 1) {
 			APs.add(root);
 		}
@@ -164,13 +216,14 @@ public class Mapper extends GUI {
 		return APs;
 	}
 
+	int iterations = 0;
+
 	private List<Node> getAPs(Node startingNode, Node root) {
-		int depth = 1;
 		List<Node> APs = new LinkedList<>();
 		Stack<NodeElement> nodesToCheck = new Stack<>();
 
 		// Initialize the stack
-		nodesToCheck.push(new NodeElement(startingNode, depth, root));
+		nodesToCheck.push(new NodeElement(startingNode,1, root));
 
 		// Iterate over all nodes in the subtree
 		while (!nodesToCheck.empty()) {
@@ -181,8 +234,9 @@ public class Mapper extends GUI {
 			if (isUnvisited(element.node.nodeID)) {
 				// Set visited and reachback
 				setVisited(element.node.nodeID);
-				element.node.reachBack = depth;
-				setDepth(element.node.nodeID, depth);
+				element.node.reachBack = element.depth;
+				setDepth(element.node.nodeID, element.depth);
+
 				// Set children
 				Set<Node> neighbors = element.node.getNeighbors();
 				neighbors.removeIf(e -> e.equals(element.parent));
@@ -191,32 +245,32 @@ public class Mapper extends GUI {
 			// Not done with this node yet, process one child
 			} else if (!element.children.empty()) {
 				Node child = element.popChild();
+
 				// If you haven't visited a node, add it to the stack of nodes to check
 				if (isUnvisited(child.nodeID)) {
-					nodesToCheck.push(
-							new NodeElement(child,
-									getDepth(element.node.nodeID) +1,
-									element.node));
-				// You've already visited this node, your reachback cannot exceed its
-				//	reachback
+					nodesToCheck.push(new NodeElement(child, element.depth + 1, element.node));
+
+				// You've already visited this node, your reachback cannot exceed its depth
 				} else {
-					element.node.reachBack = Math.min(element.node.reachBack,
-							getDepth(child.nodeID));
+					element.node.reachBack = Math.min(element.node.reachBack, getDepth(child.nodeID));
 				}
 
 			// All the node's children have been processed, process this node
 			} else {
 				// Ignore the starting node
 				if (!element.node.equals(startingNode)){
+
 					// Update the parent's reachback if this one's better
-					element.parent.reachBack = Math.min(element.node.reachBack,
-							element.parent.reachBack);
+					element.parent.reachBack = Math.min(element.node.reachBack, element.parent.reachBack);
+
 					// If you can't reach a node above the parent, you need the parent
 					//	and it is an articulation point
 					if (element.node.reachBack >= getDepth(element.parent.nodeID)) {
+						System.out.println("Adding " + iterations++ + "th ap");
 						APs.add(element.parent);
 					}
 				}
+
 				// Finished processing this node
 				nodesToCheck.pop();
 			}
@@ -227,11 +281,11 @@ public class Mapper extends GUI {
 	}
 
 	private boolean isUnvisited(int id) {
-		return visitedNodes.containsKey(id) && visitedNodes.get(id);
+		return !visitedNodes.contains(id);
 	}
 
 	private void setVisited(int id) {
-		visitedNodes.put(id, true);
+		visitedNodes.add(id);
 	}
 
 	private void setDepth(int id, int depth) {
@@ -246,11 +300,13 @@ public class Mapper extends GUI {
 	}
 
 	private static class NodeElement {
+		int depth;
 		Node node, parent;
 		Stack<Node> children = new Stack<>();
 
 		NodeElement(Node node, int depth, Node parent) {
 			this.node = node;
+			this.depth = depth;
 			this.parent = parent;
 		}
 
@@ -263,12 +319,11 @@ public class Mapper extends GUI {
 		}
 	}
 
+	/* MST */
+
 	private List<Graph> getComponents() {
-		LinkedList<Graph> components = new LinkedList<>();
-
 		//TODO: Kosaraju
-
-		return components;
+		return null;
 	}
 
 }
