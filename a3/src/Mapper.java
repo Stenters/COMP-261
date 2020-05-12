@@ -64,7 +64,7 @@ public class Mapper extends GUI {
 			if (distance < bestDist) {
 				bestDist = distance;
 				closest = node;
-			}
+			}z
 		}
 
 		// if it's close enough, highlight it and show some information.
