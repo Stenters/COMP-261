@@ -219,11 +219,6 @@ public class Mapper extends GUI {
 	}
 
 	public void highlightMinimumSpanningTrees() {
-		for(Node n : graph.nodes.values()) {
-			allSegs.addAll(n.segments);
-		}
-		System.out.println("Nodes in graph: " + graph.nodes.size() + "\nEdges in graph: " + allSegs.size());
-
 		Collection<Node> nodesToHighlight = new HashSet<>();
 		Collection<Segment> segmentsToHighlight = new HashSet<>();
 		int iterations = 0;
@@ -366,9 +361,6 @@ public class Mapper extends GUI {
 	}
 
 	/* MST */
-
-	Set<Segment> allSegs = new HashSet<>();
-
 	private Set<TreeNode> getMST() {
 		Set<TreeNode> forest = new HashSet<>();
 		Set<FringeElement> toPutInFringe = new HashSet<>();
@@ -383,28 +375,25 @@ public class Mapper extends GUI {
 				fringe.add(f);
 			}
 
-			toPutInFringe.add(new FringeElement(a,b,a.data.getShortestSegment(b.data)));
+			toPutInFringe.add(f);
 		}
 
-		List<FringeElement> unTracked = new LinkedList<>();
-
 		for(FringeElement a : toPutInFringe) {
-			boolean hasBeenFound = false;
-			for(FringeElement b : fringe) {
+			boolean found = false;
+			for (FringeElement b : fringe) {
 				if (b == a) {
-					hasBeenFound = true;
+					found = true;
 					break;
 				}
 			}
-			if (!hasBeenFound) {
-				unTracked.add(a);
+			if (!found) {
+				System.out.println("Didn't find: " + a);
 			}
 		}
 
-		for(FringeElement f : unTracked) {
-			System.out.println("One untracked!");
-		}
+		System.out.printf("Fringe size: %d, tPIF: %d, forest: %d\n", fringe.size(), toPutInFringe.size(), forest.size());
 
+		int iters = 0;
 		while (forest.size() > 1) {
 			FringeElement element = fringe.poll();
 
@@ -421,9 +410,11 @@ public class Mapper extends GUI {
 				// Else, merge the shallower one into the deeper one
 				// 	and remove the element from the forest
 //				if (element.a.depth < element.b.depth) {
-					parentA.setParentAndToParent(parentB, element.edge);
+				parentA.setParentAndToParent(parentB, element.edge);
 //				System.out.println("Forest contains a? " + forest.contains(element.a));
-				forest.remove(element.a);
+				if (!forest.remove(element.a)) {
+					System.out.println(++iters + ") Didn't find element: " + element.a);
+				}
 //				if (forest.remove(element.a)) System.out.println("Removal Successful");
 //				System.out.println("Forest contains a after removal? " + forest.contains(element.a));
 //				} else {
@@ -475,7 +466,7 @@ public class Mapper extends GUI {
 		}
 
 		public TreeNode getParent() {
-			if (data.equals(parent.data)) {
+			if (parent == this) {
 				return this;
 			} else {
 				return parent.getParent();
@@ -484,7 +475,7 @@ public class Mapper extends GUI {
 
 		public void setParentAndToParent(TreeNode parent, Segment toParent) {
 			this.parent = parent;
-			this.depth = parent.depth + 1;
+			if (parent.depth == depth) { parent.depth = depth + 1; }
 			parent.children.add(this);
 			this.toParent = toParent;
 		}
