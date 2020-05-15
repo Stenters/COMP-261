@@ -45,8 +45,8 @@ public class Mapper extends GUI {
 	// our data structures.
 	private Graph graph;
 
-	private final Collection<Integer> visitedNodes = new HashSet<>();
-	private final Map<Integer, Integer> nodeDepths = new HashMap<>();
+	private Collection<Integer> visitedNodes;
+	private Map<Integer, Integer> nodeDepths;
 
 	@Override
 	protected void redraw(Graphics g) {
@@ -168,13 +168,31 @@ public class Mapper extends GUI {
 	/* GUI Methods */
 
 	public void highlightArticulationPoints(Node root) {
+		visitedNodes = new HashSet<>();
+		nodeDepths = new HashMap<>();
 		List<Node> APs = new LinkedList<>(DFS(root));
+		List<Node> dups = new LinkedList<>();
 
-		// TODO: fix extra node on large data set
+		// TODO: fix extra node sometimes shows up
 
-//		for(Node n : graph.nodes.values()) {
-//			APs.addAll(DFS(n));
-//		}
+		for(Node n : graph.nodes.values()) {
+			APs.addAll(DFS(n));
+		}
+
+		for(Node n : APs) {
+			boolean isSelf = true;
+			for(Node m : APs) {
+				if (n.nodeID == m.nodeID) {
+					if (!isSelf) {
+						System.out.println(m.nodeID + " is a dup! (root id " + root.nodeID + ")");
+						dups.add(m);
+					} else {
+						isSelf = false;
+					}
+				}
+			}
+		}
+		APs.removeAll(dups);
 
 		graph.setHighlightedNodes(APs);
 
@@ -196,25 +214,34 @@ public class Mapper extends GUI {
 			getTextOutputArea().append(n.toString() + "\n");
 		}
 
+		redraw();
+
 	}
 
 	public void highlightMinimumSpanningTrees() {
+		for(Node n : graph.nodes.values()) {
+			allSegs.addAll(n.segments);
+		}
+		System.out.println("Nodes in graph: " + graph.nodes.size() + "\nEdges in graph: " + allSegs.size());
+
 		Collection<Node> nodesToHighlight = new HashSet<>();
 		Collection<Segment> segmentsToHighlight = new HashSet<>();
 		int iterations = 0;
 
 		for(TreeNode tn : getMST()) {
 			Collection<Segment> children = tn.getAllSegments();
-			System.out.println(iterations++ + ": #edges in MST = " + children.size());
+			System.out.println(++iterations + ": #edges in MST = " + children.size());
 
 			nodesToHighlight.addAll(tn.getAllChildren());
 			segmentsToHighlight.addAll(tn.getAllSegments());
 
 
 		}
+		System.out.println("Highlighting " + nodesToHighlight.size() + " nodes and " + segmentsToHighlight.size() + " edges");
 
 		graph.setHighlightedNodes(nodesToHighlight);
 		graph.setHighlightedSegments(segmentsToHighlight);
+		redraw();
 	}
 
 	/* DFS & APs */
@@ -340,23 +367,42 @@ public class Mapper extends GUI {
 
 	/* MST */
 
+	Set<Segment> allSegs = new HashSet<>();
+
 	private Set<TreeNode> getMST() {
 		Set<TreeNode> forest = new HashSet<>();
+		Set<FringeElement> toPutInFringe = new HashSet<>();
 		PriorityQueue<FringeElement> fringe = new PriorityQueue<>();
 
-		for(Node n : graph.nodes.values()) {
-			TreeNode tn = new TreeNode(n);
-			forest.add(tn);
-
-			for (Node m : n.getNeighbors()) {
-				TreeNode tm = new TreeNode(m);
-
-				// If m was processed first, the edge is already recorded and we can skip
-				if (forest.contains(tm)) { continue; }
-
-				// If not, add the edge to the fringe
-				fringe.add(new FringeElement(tn,tm,n.getShortestSegment(m)));
+		for(Segment s : graph.segments) {
+			TreeNode a = new TreeNode(s.start), b = new TreeNode(s.end);
+			forest.add(a);
+			forest.add(b);
+			FringeElement f = new FringeElement(a,b,a.data.getShortestSegment(b.data));
+			if (fringe.stream().noneMatch(x->x.equals(f))) {
+				fringe.add(f);
 			}
+
+			toPutInFringe.add(new FringeElement(a,b,a.data.getShortestSegment(b.data)));
+		}
+
+		List<FringeElement> unTracked = new LinkedList<>();
+
+		for(FringeElement a : toPutInFringe) {
+			boolean hasBeenFound = false;
+			for(FringeElement b : fringe) {
+				if (b == a) {
+					hasBeenFound = true;
+					break;
+				}
+			}
+			if (!hasBeenFound) {
+				unTracked.add(a);
+			}
+		}
+
+		for(FringeElement f : unTracked) {
+			System.out.println("One untracked!");
 		}
 
 		while (forest.size() > 1) {
@@ -364,6 +410,7 @@ public class Mapper extends GUI {
 
 			// If we run out of sides, return the forest
 			if (element == null) {
+				System.out.println("Size of forest " + forest.size());
 				return forest;
 			} else {
 				TreeNode parentA = element.a.getParent(), parentB = element.b.getParent();
@@ -373,16 +420,19 @@ public class Mapper extends GUI {
 
 				// Else, merge the shallower one into the deeper one
 				// 	and remove the element from the forest
-				if (element.a.depth > element.b.depth) {
+//				if (element.a.depth < element.b.depth) {
 					parentA.setParentAndToParent(parentB, element.edge);
-					forest.remove(element.a);
-				} else {
-					parentB.setParentAndToParent(parentA, element.edge);
-					forest.remove(element.b);
-				}
+//				System.out.println("Forest contains a? " + forest.contains(element.a));
+				forest.remove(element.a);
+//				if (forest.remove(element.a)) System.out.println("Removal Successful");
+//				System.out.println("Forest contains a after removal? " + forest.contains(element.a));
+//				} else {
+//					parentB.setParentAndToParent(parentA, element.edge);
+//					forest.remove(element.b);
+//				}
 			}
 		}
-
+		System.out.println("Size of forest (should be 1) " + forest.size());
 		return forest;
 	}
 
@@ -403,6 +453,11 @@ public class Mapper extends GUI {
 		@Override
 		public int compareTo(FringeElement o) {
 			return Double.compare(edge.length, o.edge.length);
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			return o instanceof FringeElement && ((FringeElement) o).edge == this.edge;
 		}
 	}
 
@@ -434,11 +489,6 @@ public class Mapper extends GUI {
 			this.toParent = toParent;
 		}
 
-		@Override
-		public boolean equals(Object o) {
-			return o instanceof TreeNode && ((TreeNode) o).data == data;
-		}
-
 		public Collection<Node> getAllChildren() {
 			Collection<Node> nodes = new HashSet<>();
 			nodes.add(data);
@@ -459,6 +509,17 @@ public class Mapper extends GUI {
 
 			return segments;
 		}
+
+		@Override
+		public boolean equals(Object o) {
+			return o instanceof TreeNode && ((TreeNode) o).data.equals(data);
+		}
+
+		@Override
+		public int hashCode() {
+			return data.nodeID;
+		}
+
 	}
 
 }

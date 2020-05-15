@@ -42,6 +42,13 @@ public class Segment {
 			g.drawLine(p.x, p.y, q.x, q.y);
 		}
 	}
+
+	@Override
+	public boolean equals(Object o) {
+		return o instanceof Segment &&
+				((Segment) o).start == this.start &&
+				((Segment) o).end == this.end;
+	}
 }
 
 // code for COMP261 assignments
