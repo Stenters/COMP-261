@@ -1,0 +1,72 @@
+1. (Articulation Points)
+
+  We are trying to find all the articulation points for the graph below by the articulation points algorithm.
+  Assume that we start from node A, and the depth of A is set to 0. When visiting neighbouring nodes, 
+  we follow the alphabetic order, i.e. if we have neighbours {B, D}, we will visit B first
+  
+  a) Write the depth and reachBack of each node
+  
+    A: depth=0, reachBack=0
+    B: depth=1, reachBack=1
+    C: depth=2, reachBack=2
+    D: depth=1, reachBack=1
+    E: depth=2, reachBack=1
+    F: depth=3, reachBack=3
+    G: depth=2, reachBack=2
+    H: depth=2, reachBack=2
+    I: depth=4, reachBack=2
+    J: depth=4, reachBack=4
+    
+  b) List all the articulation points. For each articulation point, explain which criteria the articulation
+    point algorithm used to identify it
+    
+    B: C.reachBack >= B.depth
+    D: G.reachBack >= D.depth
+    H: F.reachBack >= H.depth
+    F: J.reachBack >= F.depth
+    
+2. (Minimum spanning tree)
+
+  a)  If we use Prim’s algorithm, starting from node A, list the edges in the order that they are added to the
+    MST. Each edge is represented as the two nodes that they connect and the edge weight: e.g.“EF 3” for the
+    edge between E and F with weight 3. To make the answer unique and easy to mark, list the nodes in each 
+    edge in alphabetical order (e.g. DE not ED)
+    
+    AD 2
+    DE 6
+    EF 3
+    BE 4
+    BG 1
+    BC 2
+    CH 4
+    HI 6
+    
+  b) If we use Kruskal’s algorithm with disjoint set data structure, draw the final tree in the disjoint set
+    (NOT the final MST!). Note:  The disjoint set data structure has three methods: MakeSet(x), Find(x)
+    and Union(x,y). Union(x,y) never merges deeper trees into shorter trees. Note: When calling Union(x,y),
+    x and y always follow alphabetical order. For example, we always call Union(D,E), but never call Union(E,D).
+    
+    B
+      G
+      C
+      E
+        F
+      D
+        A
+      H
+      I
+
+3. (Fast Fourier Transform)
+
+  a) Calculate the total number of complex multiplications and additions of the above FFT process (the
+    lecture slides already showed that the normal Fourier Transform process requires 64 complex
+    multiplications and 56 complex additions). Show your working.
+    
+    Every computation follows the following: x[i] + x[j] * Wk, so there is 1 addition and 1 multiplication 
+      per computation. There are 24 computations (3 per signal) which results in 24 multiplications and 
+      24 additions
+    
+  b) In the above example, the inputs are reordered as (x[0], x[4], x[2], x[6], x[1], x[5], x[3], x[7]). 
+    For a 16-point time series (x[0], x[1], . . . , x[15]), write the reordered list of the inputs.
+    x[0], x[8], x[4], x[12], x[2], x[10], x[6], x[14], x[1], x[9], x[5], x[13], x[3], x[11], x[7], x[15]
+    
