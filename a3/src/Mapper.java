@@ -6,7 +6,6 @@ import java.awt.Point;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * This is the main class for the mapping program. It extends the GUI abstract
@@ -19,6 +18,7 @@ public class Mapper extends GUI {
 	public static final Color NODE_COLOUR = new Color(77, 113, 255);
 	public static final Color SEGMENT_COLOUR = new Color(130, 130, 130);
 	public static final Color HIGHLIGHT_COLOUR = new Color(255, 219, 77);
+
 
 	// these two constants define the size of the node squares at different zoom
 	// levels; the equation used is node size = NODE_INTERCEPT + NODE_GRADIENT *
@@ -171,44 +171,9 @@ public class Mapper extends GUI {
 		visitedNodes = new HashSet<>();
 		nodeDepths = new HashMap<>();
 		List<Node> APs = new LinkedList<>(DFS(root));
-		List<Node> dups = new LinkedList<>();
-
-		// TODO: fix extra node sometimes shows up
-
-		for(Node n : graph.nodes.values()) {
-			APs.addAll(DFS(n));
-		}
-
-		for(Node n : APs) {
-			boolean isSelf = true;
-			for(Node m : APs) {
-				if (n.nodeID == m.nodeID) {
-					if (!isSelf) {
-						System.out.println(m.nodeID + " is a dup! (root id " + root.nodeID + ")");
-						dups.add(m);
-					} else {
-						isSelf = false;
-					}
-				}
-			}
-		}
-		APs.removeAll(dups);
-
 		graph.setHighlightedNodes(APs);
 
 		getTextOutputArea().setText("Number of Articulation points: " + APs.size() + "\n");
-
-		List<Integer> apids = APs.stream().map(x -> x.nodeID).collect(Collectors.toList());
-		int numAP = 0, numNotAP = 0;
-		for (Node n : graph.nodes.values()) {
-			if (apids.contains(n.nodeID)) {
-				numAP++;
-			} else {
-				numNotAP++;
-			}
-		}
-
-		System.out.printf("Total: %d\tNumAP: %d\tNumNotAP: %d\n", graph.nodes.size(), numAP, numNotAP);
 
 		for(Node n : APs) {
 			getTextOutputArea().append(n.toString() + "\n");
@@ -219,30 +184,33 @@ public class Mapper extends GUI {
 	}
 
 	public void highlightMinimumSpanningTrees() {
-		for(Node n : graph.nodes.values()) {
-			allSegs.addAll(n.segments);
-		}
-		System.out.println("Nodes in graph: " + graph.nodes.size() + "\nEdges in graph: " + allSegs.size());
-
-		Collection<Node> nodesToHighlight = new HashSet<>();
-		Collection<Segment> segmentsToHighlight = new HashSet<>();
-		int iterations = 0;
-
-		for(TreeNode tn : getMST()) {
-			Collection<Segment> children = tn.getAllSegments();
-			System.out.println(++iterations + ": #edges in MST = " + children.size());
-
-			nodesToHighlight.addAll(tn.getAllChildren());
-			segmentsToHighlight.addAll(tn.getAllSegments());
-
-
-		}
-		System.out.println("Highlighting " + nodesToHighlight.size() + " nodes and " + segmentsToHighlight.size() + " edges");
-
-		graph.setHighlightedNodes(nodesToHighlight);
-		graph.setHighlightedSegments(segmentsToHighlight);
+		graph.setHighlightedSegments(getMST());
 		redraw();
 	}
+
+//	public List<List<Node>> getComponents() {
+//		visitedNodes = new HashSet<>();
+//		LinkedList<List<Node>> components = new LinkedList<>();
+//		for (Node n : graph.nodes.values()) {
+//			components.add(getComponent(n));
+//		}
+//
+//		return components;
+//	}
+//
+//	private List<Node> getComponent(Node n) {
+//		LinkedList<Node> component = new LinkedList<>();
+//
+//		if (isUnvisited(n.nodeID)) {
+//			setVisited(n.nodeID);
+//			component.add(n);
+//			for(Node m : n.getNeighbors()) {
+//				component.addAll(getComponent(m));
+//			}
+//		}
+//
+//		return component;
+//	}
 
 	/* DFS & APs */
 
@@ -366,85 +334,70 @@ public class Mapper extends GUI {
 	}
 
 	/* MST */
-
-	Set<Segment> allSegs = new HashSet<>();
-
-	private Set<TreeNode> getMST() {
-		Set<TreeNode> forest = new HashSet<>();
-		Set<FringeElement> toPutInFringe = new HashSet<>();
+	private Set<Segment> getMST() {
 		PriorityQueue<FringeElement> fringe = new PriorityQueue<>();
+		Set<Segment> tree = new HashSet<>();
+		HashMap<Integer, TreeNode> forest = new HashMap<>();
+
+		for (int k : graph.nodes.keySet()) {
+			forest.put(k, new TreeNode(graph.nodes.get(k)));
+		}
 
 		for(Segment s : graph.segments) {
-			TreeNode a = new TreeNode(s.start), b = new TreeNode(s.end);
-			forest.add(a);
-			forest.add(b);
-			FringeElement f = new FringeElement(a,b,a.data.getShortestSegment(b.data));
-			if (fringe.stream().noneMatch(x->x.equals(f))) {
-				fringe.add(f);
-			}
-
-			toPutInFringe.add(new FringeElement(a,b,a.data.getShortestSegment(b.data)));
+			fringe.add(new FringeElement(forest.get(s.start.nodeID), forest.get(s.end.nodeID), s.start.getShortestSegment(s.end)));
 		}
 
-		List<FringeElement> unTracked = new LinkedList<>();
+		System.out.printf("Starting sizes:\t\tforest: %d\t\tfringe: %d\t\ttree: %d\n", forest.size(), fringe.size(), tree.size());
+		FringeElement element;
 
-		for(FringeElement a : toPutInFringe) {
-			boolean hasBeenFound = false;
-			for(FringeElement b : fringe) {
-				if (b == a) {
-					hasBeenFound = true;
-					break;
-				}
+		while (forest.size() > 1 && (element = fringe.poll()) != null) {
+			/*
+		while ( (n = queue.poll()) != null ) {
+            Set a1 = n.a.getParent(), b1 = n.b.getParent();
+
+            if (a1 == b1) { continue; }
+
+            if (a1.depth < b1.depth) {
+                a1.setParent(b1);
+                b1.updateDepth(a1.depth);
+            } else {
+                b1.setParent(a1);
+                a1.updateDepth(b1.depth);
+            }
+        }
+		*/
+
+			TreeNode parentA = element.a.getParent(), parentB = element.b.getParent();
+			if (parentA.depth != 0 || parentB.depth != 0) {
+				System.out.println("Working!");
 			}
-			if (!hasBeenFound) {
-				unTracked.add(a);
+
+			if (parentA.equals(parentB)) {
+				continue;
 			}
-		}
 
-		for(FringeElement f : unTracked) {
-			System.out.println("One untracked!");
-		}
+			tree.add(element.edge);
 
-		while (forest.size() > 1) {
-			FringeElement element = fringe.poll();
-
-			// If we run out of sides, return the forest
-			if (element == null) {
-				System.out.println("Size of forest " + forest.size());
-				return forest;
+			if (parentA.depth < parentB.depth) {
+				parentA.setParent(parentB);
+				parentB.updateDepth(parentA);
+				forest.remove(element.a.data.nodeID);
 			} else {
-				TreeNode parentA = element.a.getParent(), parentB = element.b.getParent();
-
-				// If in the same set, skip
-				if (parentA.equals(parentB)) { continue; }
-
-				// Else, merge the shallower one into the deeper one
-				// 	and remove the element from the forest
-//				if (element.a.depth < element.b.depth) {
-					parentA.setParentAndToParent(parentB, element.edge);
-//				System.out.println("Forest contains a? " + forest.contains(element.a));
-				forest.remove(element.a);
-//				if (forest.remove(element.a)) System.out.println("Removal Successful");
-//				System.out.println("Forest contains a after removal? " + forest.contains(element.a));
-//				} else {
-//					parentB.setParentAndToParent(parentA, element.edge);
-//					forest.remove(element.b);
-//				}
+				parentB.setParent(parentA);
+				parentA.updateDepth(parentB);
+				forest.remove(element.b.data.nodeID);
 			}
 		}
-		System.out.println("Size of forest (should be 1) " + forest.size());
-		return forest;
+
+		System.out.printf("Ending sizes:\t\tforest: %d\t\tfringe: %d\t\ttree:%d\n", forest.size(), fringe.size(), tree.size());
+		return tree;
 	}
 
 	private static class FringeElement implements Comparable<FringeElement> {
-		TreeNode a,b;
+		TreeNode a, b;
 		Segment edge;
 
 		FringeElement(TreeNode a, TreeNode b, Segment edge) {
-			if (edge == null) {
-				System.err.println("edge null between " + a.data + " and " + b.data);
-			}
-
 			this.a = a;
 			this.b = b;
 			this.edge = edge;
@@ -462,52 +415,30 @@ public class Mapper extends GUI {
 	}
 
 	private static class TreeNode {
-		TreeNode parent;
+		private TreeNode parent;
+		int depth = 0;
 		Node data;
-		int depth;
-		Set<TreeNode> children = new HashSet<>();
-		Segment toParent = null;
 
 		TreeNode(Node n) {
 			data = n;
 			parent = this;
-			depth = 0;
 		}
 
 		public TreeNode getParent() {
-			if (data.equals(parent.data)) {
+			if (parent == this) {
 				return this;
-			} else {
-				return parent.getParent();
 			}
+			return parent.getParent();
 		}
 
-		public void setParentAndToParent(TreeNode parent, Segment toParent) {
+		public void setParent(TreeNode parent) {
 			this.parent = parent;
-			this.depth = parent.depth + 1;
-			parent.children.add(this);
-			this.toParent = toParent;
 		}
 
-		public Collection<Node> getAllChildren() {
-			Collection<Node> nodes = new HashSet<>();
-			nodes.add(data);
-			for (TreeNode tn : children) {
-				nodes.addAll(tn.getAllChildren());
+		public void updateDepth(TreeNode child) {
+			if (depth == child.depth) {
+				depth++;
 			}
-
-			return nodes;
-		}
-
-		public Collection<Segment> getAllSegments() {
-			Collection<Segment> segments = new HashSet<>();
-
-			if (toParent != null) { segments.add(toParent); }
-			for (TreeNode tn : children) {
-				segments.addAll(tn.getAllSegments());
-			}
-
-			return segments;
 		}
 
 		@Override
