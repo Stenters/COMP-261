@@ -5,4 +5,6 @@
 
 interface RobotProgramNode {
 	public void execute(Robot robot);
+
+	public String formattedToString(int indentLevel);
 }

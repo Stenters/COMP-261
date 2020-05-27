@@ -82,13 +82,8 @@ public class Parser {
 	static Pattern OPENBRACE = Pattern.compile("\\{");
 	static Pattern CLOSEBRACE = Pattern.compile("\\}");
 
-	/**
-	 * PROG ::= STMT+
-	 */
 	static RobotProgramNode parseProgram(Scanner s) {
-		// THE PARSER GOES HERE
-
-		return null;
+		return ProgramNode.parse(s);
 	}
 
 	// utility methods for the parser
@@ -97,16 +92,16 @@ public class Parser {
 	 * Report a failure in the parser.
 	 */
 	static void fail(String message, Scanner s) {
-		String msg = message + "\n   @ ...";
+		StringBuilder msg = new StringBuilder(message + "\n   @ ...");
 		for (int i = 0; i < 5 && s.hasNext(); i++) {
-			msg += " " + s.next();
+			msg.append(" ").append(s.next());
 		}
 		throw new ParserFailureException(msg + "...");
 	}
 
 	/**
-	 * Requires that the next token matches a pattern if it matches, it consumes
-	 * and returns the token, if not, it throws an exception with an error
+	 * Requires that the next token matches a pattern. If it matches, it consumes
+	 * and returns the token. If not, it throws an exception with an error
 	 * message
 	 */
 	static String require(String p, String message, Scanner s) {
@@ -127,7 +122,7 @@ public class Parser {
 
 	/**
 	 * Requires that the next token matches a pattern (which should only match a
-	 * number) if it matches, it consumes and returns the token as an integer if
+	 * number). If it matches, it consumes and returns the token as an integer. If
 	 * not, it throws an exception with an error message
 	 */
 	static int requireInt(String p, String message, Scanner s) {
@@ -148,7 +143,7 @@ public class Parser {
 
 	/**
 	 * Checks whether the next token in the scanner matches the specified
-	 * pattern, if so, consumes the token and return true. Otherwise returns
+	 * pattern, if so, consumes the token and returns true. Otherwise returns
 	 * false without consuming anything.
 	 */
 	static boolean checkFor(String p, Scanner s) {
@@ -172,3 +167,213 @@ public class Parser {
 }
 
 // You could add the node classes here, as long as they are not declared public (or private)
+
+/*
+TODO
+	node for each non-terminal
+	node or enum for actoins
+	foreach node
+		execute
+		toString
+		parse := scanner -> RobotProgramNode
+*/
+
+class ProgramNode implements RobotProgramNode {
+	// PROG  ::= STMT*
+	LinkedList<StatementNode> actions;
+
+	private ProgramNode() {}
+
+	public static ProgramNode parse(Scanner s) {
+		ProgramNode pn = new ProgramNode();
+		pn.actions = new LinkedList<>();
+
+		while (s.hasNext()) {
+			pn.actions.add(StatementNode.parse(s));
+		}
+
+		return pn;
+	}
+
+
+	@Override
+	public void execute(Robot robot) {
+		for (StatementNode s : actions) {
+			s.execute(robot);
+		}
+	}
+
+	@Override
+	public String formattedToString(int indentLevel) {
+		StringBuilder sb = new StringBuilder("\t".repeat(indentLevel));
+
+		for (StatementNode s : actions) {
+			sb.append(s.formattedToString(indentLevel)).append('\n');
+		}
+
+		return sb.toString();
+	}
+
+	@Override
+	public String toString() {
+		return formattedToString(0);
+	}
+}
+
+class StatementNode implements RobotProgramNode {
+	// STMT  ::= ACT ";" | LOOP
+	RobotProgramNode action;
+
+	private StatementNode() {}
+
+	public static StatementNode parse(Scanner s) {
+		StatementNode sn = new StatementNode();
+
+		if (Parser.checkFor("loop",s)) {
+			sn.action = LoopNode.parse(s);
+		} else {
+			sn.action = ActionNode.parse(s);
+		}
+
+		return sn;
+	}
+
+	@Override
+	public void execute(Robot robot) {
+		action.execute(robot);
+	}
+
+	public String formattedToString(int indentLevel) {
+		return action.formattedToString(indentLevel);
+	}
+
+	@Override
+	public String toString() {
+		return formattedToString(0);
+	}
+}
+
+class ActionNode implements RobotProgramNode {
+	// ACT ::= "move" | "turnL" | "turnR" | "takeFuel" | "wait"
+	private enum  Actions { MOVE, TURNL, TURNR, TAKEFUEL, WAIT }
+	Actions action;
+
+	private ActionNode() {}
+
+	public static ActionNode parse(Scanner s) {
+		ActionNode an = new ActionNode();
+		String next = s.next().toLowerCase();
+
+		switch (next) {
+			case "move" -> an.action = Actions.MOVE;
+			case "turnl" -> an.action = Actions.TURNL;
+			case "turnr" -> an.action = Actions.TURNR;
+			case "takefuel" -> an.action = Actions.TAKEFUEL;
+			case "wait" -> an.action = Actions.WAIT;
+			default -> Parser.fail("Invalid action '" + next + "', " +
+					"options are\n\t\"move\" | \"turnL\" | \"turnR\" | \"takeFuel\" | \"wait\" ", s);
+		}
+
+		Parser.require(";","Improper action ending, should be ';'",s);
+
+		return an;
+	}
+
+	@Override
+	public void execute(Robot robot) {
+		try {
+			switch (action) {
+				case MOVE -> robot.move();
+				case WAIT -> robot.wait();
+				case TURNL -> robot.turnLeft();
+				case TURNR -> robot.turnRight();
+				case TAKEFUEL -> robot.takeFuel();
+			}
+		} catch (InterruptedException e) {
+			System.err.println("Robot was interupted while trying to wait!");
+		}
+	}
+
+	public String formattedToString(int indentlevel) {
+		return "\t".repeat(indentlevel) + action.name();
+	}
+
+	@Override
+	public String toString() {
+		return formattedToString(0);
+	}
+}
+
+class LoopNode implements RobotProgramNode {
+	// LOOP  ::= "loop" BLOCK
+	BlockNode loop;
+
+	private LoopNode() {}
+
+	public static LoopNode parse(Scanner s) {
+		LoopNode ln = new LoopNode();
+		ln.loop = BlockNode.parse(s);
+		return ln;
+	}
+
+	@Override
+	public void execute(Robot robot) {
+		while (true) {
+			loop.execute(robot);
+		}
+	}
+
+	public String formattedToString(int indentLevel) {
+		return "\t".repeat(indentLevel) + "loop\n" +
+					loop.formattedToString(indentLevel + 1);
+	}
+
+	@Override
+	public String toString() {
+		return formattedToString(0);
+	}
+}
+
+class BlockNode implements RobotProgramNode {
+	// BLOCK ::= "{" STMT+ "}"
+	List<StatementNode> statements;
+
+
+	private BlockNode() {}
+
+	public static BlockNode parse(Scanner s) {
+		BlockNode bn = new BlockNode();
+		bn.statements = new LinkedList<>();
+
+		Parser.require("\\{", "Illegal start to loop!", s);
+
+		while (!Parser.checkFor("\\}", s)) {
+			bn.statements.add(StatementNode.parse(s));
+		}
+
+		return bn;
+	}
+
+
+	@Override
+	public void execute(Robot robot) {
+		for (StatementNode s : statements) {
+			s.execute(robot);
+		}
+	}
+
+	public String formattedToString(int indentLevel) {
+		StringBuilder sb = new StringBuilder();
+
+		for (StatementNode s : statements) {
+			sb.append(s.formattedToString(indentLevel)).append('\n');
+		}
+
+		return sb.toString();
+	}
+
+	@Override
+	public String toString() {
+		return formattedToString(0);
+	}
+}
