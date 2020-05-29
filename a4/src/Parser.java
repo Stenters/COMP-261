@@ -258,9 +258,12 @@ class StatementNode implements RobotProgramNode {
 }
 
 class ActionNode implements RobotProgramNode {
-	// ACT ::= "move" | "turnL" | "turnR" | "shieldOn" | "shieldOff" | "takeFuel" | "wait"
+	// ACT ::= ACT   ::= "move" [ "(" EXP ")" ] | "turnL" | "turnR" | "turnAround" |
+	//          "shieldOn" | "shieldOff" | "takeFuel" | "wait" [ "(" EXP ")" ]
+
 	private enum  Actions { MOVE, TURNL, TURNR, TURNAROUND, SHIELDON, SHIELDOFF, TAKEFUEL, WAIT }
 	Actions action;
+	ExpressionNode expression;
 
 	private ActionNode() {}
 
@@ -281,7 +284,15 @@ class ActionNode implements RobotProgramNode {
 					"options are\n\tMOVE, TURNL, TURNR, TURNAROUND, SHIELDON, SHIELDOFF, TAKEFUEL, WAIT ", s);
 		}
 
-		Parser.require(";","Improper action ending, should be ';'",s);
+		if (an.action == Actions.MOVE || an.action == Actions.WAIT) {
+			if (Parser.checkFor("\\(", s)) {
+				an.expression = ExpressionNode.parse(s);
+				Parser.require("\\)", "Error! Didn't close your paren for your action argument", s);
+			}
+		} else {
+			Parser.require(";","Improper action ending, should be ';'",s);
+		}
+
 
 		return an;
 	}
@@ -289,15 +300,30 @@ class ActionNode implements RobotProgramNode {
 	@Override
 	public void execute(Robot robot) {
 		try {
-			switch (action) {
-				case MOVE -> robot.move();
-				case WAIT -> robot.wait();
-				case TURNL -> robot.turnLeft();
-				case TURNR -> robot.turnRight();
-				case TURNAROUND -> robot.turnAround();
-				case SHIELDON -> robot.setShield(true);
-				case SHIELDOFF -> robot.setShield(false);
-				case TAKEFUEL -> robot.takeFuel();
+			if (expression != null && (action == Actions.MOVE || action == Actions.WAIT)) {
+				int val = expression.execute(robot);
+				if (val < 0) {
+					System.out.println("Expression was less than zero! (Action = " + action.name() + ")");
+					return;
+				}
+
+				if (action == Actions.WAIT) { robot.wait(val * 1000); }
+				else {
+					while (val-- > 0) { robot.move(); }
+				}
+
+
+			} else {
+				switch (action) {
+					case MOVE -> robot.move();
+					case WAIT -> robot.wait();
+					case TURNL -> robot.turnLeft();
+					case TURNR -> robot.turnRight();
+					case TURNAROUND -> robot.turnAround();
+					case SHIELDON -> robot.setShield(true);
+					case SHIELDOFF -> robot.setShield(false);
+					case TAKEFUEL -> robot.takeFuel();
+				}
 			}
 		} catch (InterruptedException e) {
 			System.err.println("Robot was interupted while trying to wait!");
@@ -345,9 +371,10 @@ class LoopNode implements RobotProgramNode {
 }
 
 class IfNode implements RobotProgramNode {
-	// IF    ::= "if" "(" COND ")" BLOCK
+	// IF    ::= "if" "(" COND ")" BLOCK [ "else" BLOCK ]
 	ConditionNode cond;
-	BlockNode block;
+	BlockNode ifStatement;
+	BlockNode elseStatement;
 
 	private IfNode() {}
 
@@ -357,7 +384,10 @@ class IfNode implements RobotProgramNode {
 		Parser.require("\\(", "Invalid start to an if statement!", s);
 		in.cond = ConditionNode.parse(s);
 		Parser.require("\\)", "Invalid end to an if statement!", s);
-		in.block = BlockNode.parse(s);
+		in.ifStatement = BlockNode.parse(s);
+		if (Parser.checkFor("else", s)) {
+				in.elseStatement = BlockNode.parse(s);
+		}
 
 		return in;
 	}
@@ -365,14 +395,16 @@ class IfNode implements RobotProgramNode {
 	@Override
 	public void execute(Robot robot) {
 		if (cond.execute(robot)) {
-			block.execute(robot);
+			ifStatement.execute(robot);
+		} else if (elseStatement != null) {
+			elseStatement.execute(robot);
 		}
 	}
 
 	@Override
 	public String formattedToString(int indentLevel) {
 		return "\t".repeat(indentLevel) + "if " + cond.toString() + "\n"
-				+ block.formattedToString(indentLevel+1);
+				+ ifStatement.formattedToString(indentLevel+1);
 	}
 
 	@Override
@@ -422,7 +454,6 @@ class BlockNode implements RobotProgramNode {
 	// BLOCK ::= "{" STMT+ "}"
 	List<StatementNode> statements;
 
-
 	private BlockNode() {}
 
 	public static BlockNode parse(Scanner s) {
@@ -431,7 +462,10 @@ class BlockNode implements RobotProgramNode {
 
 		Parser.require("\\{", "Illegal start to loop!", s);
 
-		while (!Parser.checkFor("\\}", s) && s.hasNext()) {
+		while (!Parser.checkFor("\\}", s)) {
+			if (!s.hasNext()) {
+				Parser.fail("Unexpected EOF! Loop terminated with no closing brace!", s);
+			}
 			bn.statements.add(StatementNode.parse(s));
 		}
 
@@ -466,51 +500,45 @@ class BlockNode implements RobotProgramNode {
 	}
 }
 
-class ConditionNode {
-	// COND  ::= RELOP "(" SEN "," NUM ")
-	enum RELOP { LT, GT, EQ }
-	RELOP op;
-	SensorNode sen;
-	int value;
+class ExpressionNode {
+	// EXP   ::= NUM | SEN | OP "(" EXP "," EXP ")"
+	int number;
+	OperationNode op;
+	SensorNode sensor;
 
-	private ConditionNode() {}
+	private ExpressionNode() {}
 
-	public static ConditionNode parse(Scanner s) {
-		ConditionNode cn = new ConditionNode();
-		String next = s.next().toLowerCase();
+	public static ExpressionNode parse(Scanner s) {
+		ExpressionNode en = new ExpressionNode();
 
-		switch (next) {
-			case "lt" -> cn.op = RELOP.LT;
-			case "gt" -> cn.op = RELOP.GT;
-			case "eq" -> cn.op = RELOP.EQ;
+		if (s.hasNext(Parser.NUMPAT) && s.hasNextInt()) {
+			en.number = s.nextInt();
+		} else if (s.hasNext(Pattern.compile("(add|sub|mul|div)"))) {
+			en.op = OperationNode.parse(s);
+		} else {
+			en.sensor = SensorNode.parse(s);
 		}
 
-		Parser.require("\\(", "Invalid start to a condition!", s);
-		cn.sen = SensorNode.parse(s);
-		Parser.require(",", "Invalid delimiter to a condition!", s);
-		try {
-			next = s.next();
-			cn.value = Integer.parseInt(next);
-		} catch (NumberFormatException e) {
-			Parser.fail("Illegal number '" + next + "'\n\t" +
-					"vaild numbers are digits not preceded by 0 and with an optional minus sign", s);
-		}
-		Parser.require("\\)", "Invalid end to a condition!", s);
-
-		return cn;
+		return en;
 	}
 
-	public boolean execute(Robot robot) {
-		return switch (op) {
-			case EQ -> sen.execute(robot) == value;
-			case LT -> sen.execute(robot) < value;
-			case GT -> sen.execute(robot) > value;
-		};
+	public int execute(Robot robot) {
+		if (sensor != null) {
+			return sensor.execute(robot);
+		} else if (op != null) {
+			return op.execute(robot);
+		}
+		return number;
 	}
 
 	@Override
 	public String toString() {
-		return op.name() + " (" + sen.toString() + ", " + value + ")";
+		if (sensor != null) {
+			return sensor.toString();
+		} else if (op != null) {
+			return op.toString();
+		}
+		return "" + number;
 	}
 }
 
@@ -555,5 +583,147 @@ class SensorNode {
 	@Override
 	public String toString() {
 		return sensor.name();
+	}
+}
+
+class OperationNode {
+	// OP    ::= ("add" | "sub" | "mul" | "div") "(" EXP "," EXP ")"
+	enum Operation { ADD, SUB, MUL, DIV }
+	Operation op;
+	ExpressionNode arg1, arg2;
+
+	private OperationNode() {};
+
+	public static OperationNode parse(Scanner s){
+		OperationNode on = new OperationNode();
+
+		switch (s.next().toLowerCase()) {
+			case "add" -> on.op = Operation.ADD;
+			case "sub" -> on.op = Operation.SUB;
+			case "mul" -> on.op = Operation.MUL;
+			case "div" -> on.op = Operation.DIV;
+			default -> Parser.fail("Illegal operation for expression" +
+					"\n\tOptions are: add, sub, mul div", s);
+		}
+
+		Parser.require("\\(", "Illegal start to an operation, requires a paren", s);
+		on.arg1 = ExpressionNode.parse(s);
+		Parser.require(",", "Illegal delimiter in an operation, no comma found", s);
+		on.arg2 = ExpressionNode.parse(s);
+		Parser.require("\\)", "Illegal end to an operation, requires a paren", s);
+
+		return on;
+	}
+
+	public int execute(Robot robot) {
+		return switch (op) {
+			case ADD -> arg1.execute(robot) + arg2.execute(robot);
+			case SUB -> arg1.execute(robot) - arg2.execute(robot);
+			case MUL -> arg1.execute(robot) * arg2.execute(robot);
+			case DIV -> arg1.execute(robot) / arg2.execute(robot);
+		};
+	}
+
+	@Override
+	public String toString() {
+		String operation = switch (op) {
+			case ADD -> " + ";
+			case SUB -> " - ";
+			case MUL -> " * ";
+			case DIV -> " / ";
+		};
+
+		return arg1.toString() + operation + arg2.toString();
+	}
+}
+
+class ConditionNode {
+	// COND  ::= "and" "(" COND "," COND ")" | "or" "(" COND "," COND ")" | "not" "(" COND ")"  |
+	//          RELOP "(" SEN "," EXP ")
+	enum RELOP {LT, GT, EQ}
+
+	RELOP op;
+
+	enum Condition {AND, OR, NOT}
+
+	Condition cond;
+	SensorNode sen;
+	int value;
+	ConditionNode arg1, arg2;
+
+	private ConditionNode() {
+	}
+
+	public static ConditionNode parse(Scanner s) {
+		ConditionNode cn = new ConditionNode();
+		String next = s.next().toLowerCase();
+
+		if (Pattern.matches("(lt|gt|eq)", next)) {
+
+			switch (next) {
+				case "lt" -> cn.op = RELOP.LT;
+				case "gt" -> cn.op = RELOP.GT;
+				case "eq" -> cn.op = RELOP.EQ;
+			}
+
+			Parser.require("\\(", "Invalid start to a condition!", s);
+			cn.sen = SensorNode.parse(s);
+			Parser.require(",", "Invalid delimiter to a condition!", s);
+			try {
+				next = s.next();
+				cn.value = Integer.parseInt(next);
+			} catch (NumberFormatException e) {
+				Parser.fail("Illegal number '" + next + "'\n\t" +
+						"vaild numbers are digits not preceded by 0 and with an optional minus sign", s);
+			}
+			Parser.require("\\)", "Invalid end to a condition!", s);
+
+		} else {
+			switch (next) {
+				case "and" -> cn.cond = Condition.AND;
+				case "or" -> cn.cond = Condition.OR;
+				case "not" -> cn.cond = Condition.NOT;
+			}
+
+			Parser.require("\\(", "Invalid start to a logical condition!", s);
+			cn.arg1 = ConditionNode.parse(s);
+			if (!(cn.cond == Condition.NOT)) {
+				Parser.require(",", "Condition requires two arguments" +
+						"\n\tArgument given: " + cn.arg1, s);
+				cn.arg2 = ConditionNode.parse(s);
+			}
+			Parser.require("\\)", "Invalid end to a logical condition!", s);
+
+		}
+
+		return cn;
+	}
+
+	public boolean execute(Robot robot) {
+		if (op != null) {
+			return switch (op) {
+				case EQ -> sen.execute(robot) == value;
+				case LT -> sen.execute(robot) < value;
+				case GT -> sen.execute(robot) > value;
+			};
+		} else {
+			return switch (cond) {
+				case AND -> arg1.execute(robot) && arg2.execute(robot);
+				case OR -> arg1.execute(robot) || arg2.execute(robot);
+				case NOT -> !arg1.execute(robot);
+			};
+		}
+
+	}
+
+	@Override
+	public String toString() {
+		if (op != null) {
+			return op.name() + " (" + sen.toString() + ", " + value + ")";
+		} else if (cond == Condition.NOT) {
+			return cond.name() + " " + arg1;
+		} else {
+			return cond.name() + " (" + arg1 + ", " + arg2 + ")";
+		}
 	}
 }
