@@ -15,24 +15,18 @@ public class Parser {
 	 * Top level parse method, called by the World
 	 */
 	static RobotProgramNode parseFile(File code) {
-		Scanner scan = null;
-		try {
-			scan = new Scanner(code);
 
+		try (Scanner scan = new Scanner(code)){
 			// the only time tokens can be next to each other is
 			// when one of them is one of (){},;
 			scan.useDelimiter("\\s+|(?=[{}(),;])|(?<=[{}(),;])");
+			return parseProgram(scan);
 
-			RobotProgramNode n = parseProgram(scan); // You need to implement this!!!
-
-			scan.close();
-			return n;
 		} catch (FileNotFoundException e) {
 			System.out.println("Robot program source file not found");
 		} catch (ParserFailureException e) {
 			System.out.println("Parser error:");
 			System.out.println(e.getMessage());
-			scan.close();
 		}
 		return null;
 	}
@@ -168,16 +162,6 @@ public class Parser {
 
 // You could add the node classes here, as long as they are not declared public (or private)
 
-/*
-TODO
-	node for each non-terminal
-	node or enum for actoins
-	foreach node
-		execute
-		toString
-		parse := scanner -> RobotProgramNode
-*/
-
 class ProgramNode implements RobotProgramNode {
 	// PROG  ::= STMT*
 	LinkedList<StatementNode> actions;
@@ -208,7 +192,7 @@ class ProgramNode implements RobotProgramNode {
 		StringBuilder sb = new StringBuilder("\t".repeat(indentLevel));
 
 		for (StatementNode s : actions) {
-			sb.append(s.formattedToString(indentLevel)).append('\n');
+			sb.append(s.formattedToString(indentLevel));
 		}
 
 		return sb.toString();
@@ -289,10 +273,9 @@ class ActionNode implements RobotProgramNode {
 				an.expression = ExpressionNode.parse(s);
 				Parser.require("\\)", "Error! Didn't close your paren for your action argument", s);
 			}
-		} else {
-			Parser.require(";","Improper action ending, should be ';'",s);
 		}
 
+		Parser.require(";","Improper action ending, should be ';'",s);
 
 		return an;
 	}
@@ -373,8 +356,7 @@ class LoopNode implements RobotProgramNode {
 class IfNode implements RobotProgramNode {
 	// IF    ::= "if" "(" COND ")" BLOCK [ "else" BLOCK ]
 	ConditionNode cond;
-	BlockNode ifStatement;
-	BlockNode elseStatement;
+	BlockNode ifStatement, elseStatement;
 
 	private IfNode() {}
 
@@ -403,6 +385,13 @@ class IfNode implements RobotProgramNode {
 
 	@Override
 	public String formattedToString(int indentLevel) {
+		if (elseStatement != null) {
+			return "\t".repeat(indentLevel) + "if " + cond.toString() + "\n"
+					+ ifStatement.formattedToString(indentLevel+1)
+					+ "\t".repeat(indentLevel) + "else" + "\n"
+					+ elseStatement.formattedToString(indentLevel+1);
+		}
+
 		return "\t".repeat(indentLevel) + "if " + cond.toString() + "\n"
 				+ ifStatement.formattedToString(indentLevel+1);
 	}
@@ -460,7 +449,7 @@ class BlockNode implements RobotProgramNode {
 		BlockNode bn = new BlockNode();
 		bn.statements = new LinkedList<>();
 
-		Parser.require("\\{", "Illegal start to loop!", s);
+		Parser.require("\\{", "Illegal start to block!", s);
 
 		while (!Parser.checkFor("\\}", s)) {
 			if (!s.hasNext()) {
@@ -515,8 +504,11 @@ class ExpressionNode {
 			en.number = s.nextInt();
 		} else if (s.hasNext(Pattern.compile("(add|sub|mul|div)"))) {
 			en.op = OperationNode.parse(s);
-		} else {
+		} else if (s.hasNext(Pattern.compile("(fuelLeft|oppLR|oppFB|numBarrels|barrelLR|barrelFB|wallDist)"))){
 			en.sensor = SensorNode.parse(s);
+		} else {
+			Parser.fail("Illegal expression given! needs to be a number (with no leading zeros)" +
+					", an operation (add, sub, mul, or div), or a sensor value",s);
 		}
 
 		return en;
@@ -592,7 +584,7 @@ class OperationNode {
 	Operation op;
 	ExpressionNode arg1, arg2;
 
-	private OperationNode() {};
+	private OperationNode() {}
 
 	public static OperationNode parse(Scanner s){
 		OperationNode on = new OperationNode();
@@ -639,16 +631,14 @@ class OperationNode {
 
 class ConditionNode {
 	// COND  ::= "and" "(" COND "," COND ")" | "or" "(" COND "," COND ")" | "not" "(" COND ")"  |
-	//          RELOP "(" SEN "," EXP ")
+	//          RELOP "(" EXP "," EXP ")
 	enum RELOP {LT, GT, EQ}
-
 	RELOP op;
 
 	enum Condition {AND, OR, NOT}
-
 	Condition cond;
-	SensorNode sen;
-	int value;
+
+	ExpressionNode exp1, exp2;
 	ConditionNode arg1, arg2;
 
 	private ConditionNode() {
@@ -667,15 +657,9 @@ class ConditionNode {
 			}
 
 			Parser.require("\\(", "Invalid start to a condition!", s);
-			cn.sen = SensorNode.parse(s);
+			cn.exp1 = ExpressionNode.parse(s);
 			Parser.require(",", "Invalid delimiter to a condition!", s);
-			try {
-				next = s.next();
-				cn.value = Integer.parseInt(next);
-			} catch (NumberFormatException e) {
-				Parser.fail("Illegal number '" + next + "'\n\t" +
-						"vaild numbers are digits not preceded by 0 and with an optional minus sign", s);
-			}
+			cn.exp2 = ExpressionNode.parse(s);
 			Parser.require("\\)", "Invalid end to a condition!", s);
 
 		} else {
@@ -702,14 +686,14 @@ class ConditionNode {
 	public boolean execute(Robot robot) {
 		if (op != null) {
 			return switch (op) {
-				case EQ -> sen.execute(robot) == value;
-				case LT -> sen.execute(robot) < value;
-				case GT -> sen.execute(robot) > value;
+				case EQ -> exp1.execute(robot) == exp2.execute(robot);
+				case LT -> exp1.execute(robot) <  exp2.execute(robot);
+				case GT -> exp1.execute(robot) >  exp2.execute(robot);
 			};
 		} else {
 			return switch (cond) {
 				case AND -> arg1.execute(robot) && arg2.execute(robot);
-				case OR -> arg1.execute(robot) || arg2.execute(robot);
+				case OR  -> arg1.execute(robot) || arg2.execute(robot);
 				case NOT -> !arg1.execute(robot);
 			};
 		}
@@ -719,7 +703,7 @@ class ConditionNode {
 	@Override
 	public String toString() {
 		if (op != null) {
-			return op.name() + " (" + sen.toString() + ", " + value + ")";
+			return op.name() + " (" + exp1.toString() + ", " + exp2 + ")";
 		} else if (cond == Condition.NOT) {
 			return cond.name() + " " + arg1;
 		} else {
