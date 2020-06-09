@@ -79,13 +79,19 @@ public class Parser {
 	// List to carry variables
 	static HashMap<String, ExpressionNode> vars = new HashMap<>();
 
-	static void addVar(Scanner s) {
+	static String addVar(Scanner s) {
 		// ASSGN ::= VAR "=" EXP ";"
-		String name = Parser.require(Pattern.compile("\\$[A-Za-z][A-Za-z0-9]*"), "Illegal variable name!", s);
+//		String name = Parser.require(Pattern.compile("\\$[A-Za-z][A-Za-z0-9]*"), "Illegal variable name!", s);
+		String name = s.next();
+		if (!Pattern.matches("\\$[A-Za-z][A-Za-z0-9]*", name)) {
+			fail("Illegal variable name '" + name + "'", s);
+		}
 		Parser.require("=", "Illegal assignment to variable!", s);
 		ExpressionNode expr = ExpressionNode.parse(s);
+		Parser.require(";", "End of assignment must be a semicolon!", s);
 
 		Parser.vars.put(name, expr);
+		return name;
 	}
 
 	static RobotProgramNode parseProgram(Scanner s) {
@@ -219,6 +225,7 @@ class ProgramNode implements RobotProgramNode {
 class StatementNode implements RobotProgramNode {
 	// STMT  ::= ACT ";" | LOOP | IF | WHILE | ASSGN
 	RobotProgramNode action;
+	String varname;
 
 	private StatementNode() {}
 
@@ -231,11 +238,13 @@ class StatementNode implements RobotProgramNode {
 			sn.action = IfNode.parse(s);
 		} else if (Parser.checkFor("while", s)) {
 			sn.action = WhileNode.parse(s);
-		} else if (Parser.checkFor(
-				Pattern.compile("(move|turnL|turnR|turnAround|shieldOn|sheildOff|takeFuel|wait)"), s)) {
+		} else if (s.hasNext(
+				Pattern.compile("(move|turnL|turnR|turnAround|shieldOn|shieldOff|takeFuel|wait)"))) {
 			sn.action = ActionNode.parse(s);
+		} else if (s.hasNext(Pattern.compile("\\$[A-Za-z][A-Za-z0-9]*"))){
+			sn.varname = Parser.addVar(s);
 		} else {
-			Parser.addVar(s);
+			Parser.fail("Invalid statement!", s);
 		}
 
 		return sn;
@@ -251,6 +260,8 @@ class StatementNode implements RobotProgramNode {
 	public String formattedToString(int indentLevel) {
 		if (action != null) {
 			return action.formattedToString(indentLevel);
+		} else if (!varname.equals("")) {
+			return "\t".repeat(indentLevel) + varname + " = " + Parser.vars.get(varname).toString() + "\n";
 		} else {
 			return "";
 		}
@@ -528,6 +539,9 @@ class ActionNode implements RobotProgramNode {
 	}
 
 	public String formattedToString(int indentlevel) {
+		if (expression != null) {
+			return "\t".repeat(indentlevel) + action.name() + "(" + expression.toString() + ")";
+		}
 		return "\t".repeat(indentlevel) + action.name();
 	}
 
@@ -554,8 +568,13 @@ class ExpressionNode {
 			en.op = OperationNode.parse(s);
 		} else if (s.hasNext(Pattern.compile("(fuelLeft|oppLR|oppFB|numBarrels|barrelLR|barrelFB|wallDist)"))) {
 			en.sensor = SensorNode.parse(s);
-		} else if (s.hasNext(Pattern.compile("\\$"))) {
-			en = Parser.vars.get(s.next());
+		} else if (s.hasNext(Pattern.compile("\\$.*"))) {
+			String name = s.next();
+			if (Parser.vars.containsKey(name)) {
+				en = Parser.vars.get(name);
+			} else {
+				en.number = 0;
+			}
 		} else {
 			Parser.fail("Illegal expression given! needs to be a number (with no leading zeros)" +
 					", an operation (add, sub, mul, or div), or a sensor value",s);
@@ -609,8 +628,7 @@ class SensorNode {
 					+ "FUELLEFT, OPPLR, OPPFB, NUMBARRELS, BARRELLR, BARRELFB, WALLDIST", s);
 		}
 
-		if (sn.sensor == Sensor.BARRELLR || sn.sensor == Sensor.BARRELFB) {
-			Parser.require("\\(", "Illegal start to sensor expression " + sn.sensor.name(), s);
+		if ((sn.sensor == Sensor.BARRELLR || sn.sensor == Sensor.BARRELFB) && Parser.checkFor("\\(", s)) {
 			sn.expr = ExpressionNode.parse(s);
 			Parser.require("\\)", "Illegal end to sensor expression " + sn.sensor.name(), s);
 		}
@@ -640,6 +658,9 @@ class SensorNode {
 
 	@Override
 	public String toString() {
+		if (expr != null) {
+			return sensor.name() + "(" + expr.toString() + ")";
+		}
 		return sensor.name();
 	}
 }
