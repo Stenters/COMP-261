@@ -12,15 +12,25 @@ public class KMP {
 	int[] substringLengths;
 
 	public KMP(String pattern, String text) {
-		substringLengths = new int[text.length()];
+		substringLengths = new int[pattern.length()];
+		substringLengths[0] = -1;
+		substringLengths[1] = 0;
+		int i = 2,j = 0;
 
-		for (int i = 0; i < text.length(); ++i) {
-			int j = 0;
-			while (i+j < text.length() && j < pattern.length() && pattern.toCharArray()[j] == text.toCharArray()[i+j]) {
-				++j;
+		while (i < pattern.length()) {
+			if (pattern.charAt(i-1) == pattern.charAt(j)) {
+				substringLengths[i++] = ++j;
+			} else if (j !=0) {
+				j = substringLengths[j];
+			} else {
+				substringLengths[i++] = 0;
 			}
-			substringLengths[i] = j;
 		}
+
+		for (int k = 0; k < substringLengths.length; ++k) {
+			System.out.printf("%c:%d\t", pattern.charAt(k), substringLengths[k]);
+		}
+		System.out.println();
 	}
 
 	/**
@@ -30,13 +40,16 @@ public class KMP {
 	 * exists, or -1 if it doesn't.
 	 */
 	public int search(String pattern, String text) {
-		int i = 0;
+		int i = 0, j = 0;
 
-		while (i < text.length()) {
-			if (substringLengths[i] == pattern.length()) {
-				return i;
-			} else {
-				i += substringLengths[i] + 1;
+		while (i+j < text.length()) {
+			if (pattern.charAt(i) == text.charAt(i+j)) {
+				if (++i == pattern.length()) {
+					return j;
+				}
+			}else {
+				j += i - substringLengths[i];
+				i = substringLengths[i] == -1 ? 0 : substringLengths[i];
 			}
 		}
 
