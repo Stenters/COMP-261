@@ -83,7 +83,7 @@ public class Assignment5 {
 				return;
 			}
 			if (compressionOutputFile == null) {
-				JOptionPane.showMessageDialog(frame, "Output file not unselected.");
+				JOptionPane.showMessageDialog(frame, "Output file not selected.");
 				return;
 			}
 			if (!compressionInputFile.getName().endsWith(".txt")) {
