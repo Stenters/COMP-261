@@ -81,7 +81,7 @@ public class Assignment5 {
 
 		float probA_Tak = ngram.getCharProb("a tak", 'a'); // N = 5
 		float probMaori = ngram.calcTotalLogProb(ngram.findCharProbs(whakatauki));
-		float probEnglish = ngram.calcTotalLogProb(ngram.findCharProbs(whakatauki));
+		float probEnglish = ngram.calcTotalLogProb(ngram.findCharProbs(saying));
 
 		System.out.println("a tak: " + probA_Tak + ", maori: " + probMaori + ", english: " + probEnglish);
 	}
