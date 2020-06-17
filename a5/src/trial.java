@@ -3,12 +3,12 @@ import java.util.Set;
 public class trial {
 
     static String[] teststrings = {
-            "ssssssss", "sssbsss", "asdf", "past the mast of the last"
-//            "Hi", "HeHe",
-//            "abc", "abdba",
-//            "aab", "aaaaaaa",
-//            "ababc", "abababcababa",
-//            "abc", "abdababcd"
+            "ssssssss", "sssbsss", "asdf", "past the mast of the last",
+            "Hi", "HeHe",
+            "abc", "abdba",
+            "aab", "aaaaaaa",
+            "ababc", "abababcababa",
+            "abc", "abdababcd"
     };
 
     public static void main(String[] args) {
@@ -23,10 +23,13 @@ public class trial {
 //                tests[i/2].search(teststrings[i], teststrings[i+1]));
 //        }
 
-        LempelZiv sut = new LempelZiv();
+//        LempelZiv sut = new LempelZiv();
+//
+//        for (String s : teststrings) {
+//            System.out.println(sut.decompress(sut.compress(s)) + "\n");
+//        }
 
-        for (String s : teststrings) {
-            System.out.println(sut.decompress(sut.compress(s)) + "\n");
-        }
+        Ngrams ngram = new Ngrams("the quick brown fox jumps over the lazy dog");
+        System.out.println(ngram.calcTotalLogProb(ngram.findCharProbs("hello there, general Kenobi")));
     }
 }

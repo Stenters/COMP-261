@@ -7,6 +7,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -14,6 +15,7 @@ import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.List;
 
+import javax.sound.midi.Soundbank;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -69,6 +71,19 @@ public class Assignment5 {
 
 	public Assignment5() {
 		initialise();
+
+		// Do Part 4 in the console
+		File file = new File(DEFAULT_EDITOR_FILE);
+		String whakatauki = "Hurihia to aroaro ki te ra tukuna to atarangi kia taka ki muri i a koe";
+		String saying = "Turn your face to the sun and the shadows fall behind you, translation";
+
+		Ngrams ngram = new Ngrams(readFile(file));
+
+		float probA_Tak = ngram.getCharProb("a tak", 'a'); // N = 5
+		float probMaori = ngram.calcTotalLogProb(ngram.findCharProbs(whakatauki));
+		float probEnglish = ngram.calcTotalLogProb(ngram.findCharProbs(whakatauki));
+
+		System.out.println("a tak: " + probA_Tak + ", maori: " + probMaori + ", english: " + probEnglish);
 	}
 
 	/**

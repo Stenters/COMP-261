@@ -1,7 +1,3 @@
-import javax.net.ssl.SSLContext;
-import java.util.HashSet;
-import java.util.LinkedList;
-
 /**
  * A new instance of LempelZiv is created for every run.
  */
@@ -60,8 +56,6 @@ public class LempelZiv {
 			}
 		}
 
-		System.out.println(res.toString());
-
 		return res.toString();
 	}
 
@@ -76,8 +70,7 @@ public class LempelZiv {
 			if (compressed.charAt(i) != start) {
 				res.append(compressed.charAt(i));
 			} else {
-				// [o|l|c] <-- positions are 1,3,5 greater than i
-				// need indecies of two delimiters
+
 				int ind1 = i + compressed.substring(i).indexOf(middle),
 					ind2 = ind1 + 1 + compressed.substring(ind1+1).indexOf(middle),
 					offset = Integer.parseInt(compressed.substring(i+1,ind1)),
