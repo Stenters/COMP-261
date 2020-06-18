@@ -38,9 +38,6 @@ public class HuffmanCoding {
 
 		root = queue.poll();
 		root.assignCode("");
-
-		System.out.println(root);
-
 	}
 
 	/**
@@ -68,7 +65,6 @@ public class HuffmanCoding {
 
 		while (!compressed.toString().equals("")) {
 			decoded.append(root.decode(compressed));
-			System.out.println(decoded);
 		}
 
 		return decoded.toString();
@@ -104,11 +100,7 @@ public class HuffmanCoding {
 		public abstract boolean contains(char c);
 
 		@Override
-		public String toString() {
-			return formattedToString(0);
-		}
-
-		protected abstract String formattedToString(int i);
+		public abstract String toString();
 	}
 
 	private static class BranchNode extends Node {
@@ -157,13 +149,7 @@ public class HuffmanCoding {
 
 		@Override
 		public String toString() {
-			return formattedToString(0);
-		}
-
-		@Override
-		protected String formattedToString(int i) {
-			return "\t".repeat(i) + "(" + left.code + ") " + left.formattedToString(i+1) +
-					"\n" + "\t".repeat(i) + "(" + right.code + ") " + right.formattedToString(i+1);
+			return left.toString() + "\n" + right.toString();
 		}
 
 	}
@@ -199,14 +185,8 @@ public class HuffmanCoding {
 		}
 
 		@Override
-		public String toString() {
-			return formattedToString(0);
-		}
+		public String toString() { return code + ": '" + data + "'"; }
 
-		@Override
-		protected String formattedToString(int i) {
-			return "\t".repeat(i) + "(" + code + ") " + data;
-		}
 	}
 
 }

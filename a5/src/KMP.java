@@ -1,7 +1,3 @@
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Timer;
-
 /**
  * A new KMP instance is created for every substring search performed. Both the
  * pattern and the text are passed to the constructor and the search method. You
@@ -26,11 +22,6 @@ public class KMP {
 				substringLengths[i++] = 0;
 			}
 		}
-
-		for (int k = 0; k < substringLengths.length; ++k) {
-			System.out.printf("%c:%d\t", pattern.charAt(k), substringLengths[k]);
-		}
-		System.out.println();
 	}
 
 	/**
@@ -57,17 +48,13 @@ public class KMP {
 	}
 
 	public int bruteForce(String pattern, String text) {
-		long time = System.currentTimeMillis();
 
-		for (int i = 0; i < text.length() - pattern.length(); ++i) {
+		for (int i = 0; i < text.length() - pattern.length() + 1; ++i) {
 			if (text.regionMatches(i, pattern, 0, pattern.length())) {
-
-				System.out.printf("Took: %.3f sec\n", (System.currentTimeMillis() - time) / 1000.);
 				return i;
 			}
 		}
 
-		System.out.printf("Took: %.3f sec\n", (System.currentTimeMillis() - time) / 1000.);
 		return -1;
 	}
 }

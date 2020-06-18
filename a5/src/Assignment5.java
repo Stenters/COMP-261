@@ -47,7 +47,7 @@ public class Assignment5 {
 
 	private static final Charset CHARSET = StandardCharsets.UTF_8;
 
-	private static final String DEFAULT_EDITOR_FILE = "data/war_and_peace.txt";
+	public static final String DEFAULT_EDITOR_FILE = "data/war_and_peace.txt";
 	private static final String DEFAULT_EDITOR_TEXT = "data/war_and_peace.txt not found, please load a file manually.";
 
 	// The list of algorithms in the dropdown box.
@@ -71,19 +71,6 @@ public class Assignment5 {
 
 	public Assignment5() {
 		initialise();
-
-		// Do Part 4 in the console
-		File file = new File(DEFAULT_EDITOR_FILE);
-		String whakatauki = "Hurihia to aroaro ki te ra tukuna to atarangi kia taka ki muri i a koe";
-		String saying = "Turn your face to the sun and the shadows fall behind you, translation";
-
-		Ngrams ngram = new Ngrams(readFile(file));
-
-		float probA_Tak = ngram.getCharProb("a tak", 'a'); // N = 5
-		float probMaori = ngram.calcTotalLogProb(ngram.findCharProbs(whakatauki));
-		float probEnglish = ngram.calcTotalLogProb(ngram.findCharProbs(saying));
-
-		System.out.println("a tak: " + probA_Tak + ", maori: " + probMaori + ", english: " + probEnglish);
 	}
 
 	/**
@@ -425,7 +412,7 @@ public class Assignment5 {
 	/**
 	 * A helper method for reading a file into a string.
 	 */
-	private static String readFile(File file) {
+	public static String readFile(File file) {
 		try {
 			byte[] encoded = Files.readAllBytes(file.toPath());
 			return new String(encoded, CHARSET);

@@ -4,7 +4,14 @@
 public class LempelZiv {
 	private final char start = '[', middle = '|', end = ']';
 
-	private final int WINDOW_SIZE = 100, LENGTH_SIZE = 20;
+	private final int WINDOW_SIZE, LENGTH_SIZE;
+
+	public LempelZiv() { WINDOW_SIZE = 100; LENGTH_SIZE = 20; }
+
+	public LempelZiv(int winSize, int length) {
+		WINDOW_SIZE = winSize;
+		LENGTH_SIZE = length;
+	}
 
 	/**
 	 * Take uncompressed input as a text string, compress it, and return it as a
