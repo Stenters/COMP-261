@@ -46,33 +46,35 @@ public class trial {
 
         String coded = coding.encode(text);
 
-        System.out.printf("Results for Q2:\n\tSize: %d (vs %d)\tTree: See attached file\n", coded.length(), text.length());
+        System.out.printf("Results for Q2:\n\tSize: %d (vs %d)\tTree: See attached file\n", coded.length() / 8, text.length());
+//        System.out.println(tree);
 
     }
 
     public static void q3() {
-        // Consider the Huffman coding of war\_and\_peace.txt, taisho.txt, and pi.txt. Which of these achieves the best compression,
-        // i.e. the best reduction in size? What makes some of the encodings better than others?
-//        String WAP = Assignment5.readFile(new File("data/war_and_peace.txt")),
-//                TAISHO = Assignment5.readFile(new File("data/taisho.txt")),
-//                PI = Assignment5.readFile(new File("data/pi.txt"));
+//         Consider the Huffman coding of war\_and\_peace.txt, taisho.txt, and pi.txt. Which of these achieves the best compression,
+//         i.e. the best reduction in size? What makes some of the encodings better than others?
+
+        String WAP = Assignment5.readFile(new File("data/war_and_peace.txt")),
+                TAISHO = Assignment5.readFile(new File("data/taisho.txt")),
+                PI = Assignment5.readFile(new File("data/pi.txt"));
 //
-//        HuffmanCoding WAPCoding = new HuffmanCoding(WAP),
-//                TAISHOCoding = new HuffmanCoding(TAISHO),
-//                PICoding = new HuffmanCoding(PI);
+        HuffmanCoding WAPCoding = new HuffmanCoding(WAP),
+                TAISHOCoding = new HuffmanCoding(TAISHO),
+                PICoding = new HuffmanCoding(PI);
 //
 //        String WAPEncoded = WAPCoding.encode(WAP),
 //                TAISHOEncoded = TAISHOCoding.encode(TAISHO),
 //                PIEncoded = PICoding.encode(PI);
 //
-//        int diffWAP = WAP.length() - WAPEncoded.length(),
-//                diffTAISHO = TAISHO.length() - TAISHOEncoded.length(),
-//                diffPI = PI.length() - PIEncoded.length();
+//        int diffWAP = WAP.length() - (WAPEncoded.length() / 8),
+//                diffTAISHO = TAISHO.length() - (TAISHOEncoded.length() / 8),
+//                diffPI = PI.length() - (PIEncoded.length() / 8);
 //
 //        System.out.printf("Results for Q3:\n\tDiff WAP: %d\tDiff TAISHO: %d\tDiff PI: %d\tMAX: %d\n",
 //                diffWAP, diffTAISHO, diffPI, Math.max(diffPI, Math.max(diffTAISHO, diffWAP)));
 
-        System.out.println("Results for Q3:\n\tDiff WAP: -11530560\tDiff TAISHO: -10958900\tDiff PI: -2539060\tMAX: -2539060");
+        System.out.println("Results for Q3:\n\tDiff WAP: 1409629\tDiff TAISHO: -160302\tDiff PI: 566371\tMAX: 1409629");
 
     }
 
@@ -95,14 +97,14 @@ public class trial {
         // What happens if you Huffman encode War and Peace before applying Lempel-Ziv compression to it? Do you get a smaller
         // file size (in characters) overall?
         HuffmanCoding huffman = new HuffmanCoding(text);
+        LempelZiv lz = new LempelZiv();
 
-        LempelZiv lzWAP = new LempelZiv(), lzHuff = new LempelZiv();
-
-        String LZWAP = lzWAP.compress(text),
-                LZHuff = lzHuff.compress(huffman.encode(text));
+        String LZWAP = lz.compress(text),
+                LZHuff = lz.compress(huffman.encode(text));
 
         System.out.printf("Results for Q5:\n\tLZ only: %d\tLZ & Huff: %d\n",
                 LZWAP.length(), LZHuff.length());
+
     }
 
     public static void q6() {
@@ -128,7 +130,7 @@ public class trial {
         Ngrams grammar = new Ngrams(Assignment5.readFile(new File("data/grammar.txt")));
 
         System.out.printf("Results for Q7:\n\tsize of wap ngrams: %d, size of grammar ngrams: %d\n",
-                wap.);
+                0,0);
         }
 
     public static void q8() {
@@ -186,8 +188,8 @@ public class trial {
 //        q3();
 //        q4();
 //        q5();
-//        q6();
-        q7();
+        q6();
+//        q7();
 //        q8();
     }
 }

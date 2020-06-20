@@ -1,0 +1,52 @@
+Results for Q1:
+	BF: 29	KMP: 23
+Results for Q2:
+	Size: 14788787 (vs 3258227)	Tree: See attached file
+Results for Q3:
+	Diff WAP: -11530560	Diff TAISHO: -10958900	Diff PI: -2539060	MAX: -2539060
+Results for Q4:
+	Size 50: 11505830	Size 100: 9866366	Size 500: 7944555
+Results for Q5:
+	LZ only: 15268181	LZ & Huff: 24252412
+Results for Q6:
+	a tak: 1.0E-6, maori: -813.2162, english: -825.96
+Results for Q8:
+	A: 1010101010101010	A`: null	B: 11001100110011001100	B`: null
+Process finished with exit code 0
+
+
+
+Question 1: Write a short summary of the performance you observed using the two search algorithms. 
+
+    Brute force searching regularly took a little less than 30 ms to find. KMP varied, but was usually in the 20-25 ms range. This shows an at least 15% improvemnt, which is considerable.
+
+Question 2: Report the binary tree of codes your algorithm generates, and the final size of War and Peace after Huffman coding.
+
+    Final size of War and Peace: 1.848 MB (as opposed to 3.258 MB). For the tree, see data/WAP_huffman.txt
+
+Question 3: Consider the Huffman coding of war\_and\_peace.txt, taisho.txt, and pi.txt. Which of these achieves the best compression, i.e. the best reduction in size? What makes some of the encodings better than others? 
+
+    War and Peace is the best compression, with 1.409 MB saved. This is because of two factors. Firstly, the nubmer of characters determined how good of a compression could be accomplished. Secondly, the length of the file
+        determined how significant those savings were. While PI had the better compression per character, it had significantly fewer characters, so the greater size reduction was produced less. And Taisho actually produced a
+        larger file, the lost space from not having smaller subtrees propegating down the large number of characters.
+
+Question 4: The Lempel-Ziv algorithm has a parameter: the size of the sliding window. On a text of your choice, how does changing the window size affect the quality of the compression?
+
+    By changing the window size from 50 to 100 to 500, the compressed files were 11.506 MB, 9.866 MB, and 7.945 MP respectively. From this, it seems like a larger window results in better compression. This makes sense, as 
+        having more memory to refer back to would produce more references, which would use less space.
+
+Question 5: What happens if you Huffman encode War and Peace before applying Lempel-Ziv compression to it? Do you get a smaller file size (in characters) overall? 
+
+    Lempel-Ziv and Huffman was slightly smaller than Huffman alone, but was much larger than LZ alone (LZ only: 9.866 MB, LZ & Huff: 14.701 MB)
+
+
+For Question 6, a probability was not found for 'a tak' preceding an 'a'. The probablity of the whakatauki was -813.2162, and the english translation was -825.96
+
+
+Question 6: Explain (1 paragraph) why the two log probabilities are so different.
+
+    This is due to the nature of ngrams. They utilize existing patterns of text to predict new patterns. Texts in the same language have much stronger patterns, and so are much easier to predict. Text in another language
+        practically invalidates the ngram, as the true probability of letters becomes unkown again.
+
+Question 7: Another whakatauki goes: "Titiro whakamuri kia haere whakamua". The Arithmetic Coding algorithm could use an Ngrams model to encode this string. How long would the bit-string encoding of the string be, 
+if the Arithmetic Coding algorithm used Ngrams (up to n=5 as above) that were based on (a) War_and_peace.txt versus (b) the text at http://www.gutenberg.org/files/44897/44897.txt? 

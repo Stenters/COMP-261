@@ -18,9 +18,11 @@ public class LempelZiv {
 	 * text string.
 	 */
 	public String compress(String input) {
+
 		String prev = "";
 		String next = "";
 		StringBuilder res = new StringBuilder();
+
 
 		boolean isFound;
 
@@ -39,7 +41,7 @@ public class LempelZiv {
 				} else {
 
 					res.append(start)
-							.append(i-(WINDOW_SIZE-j) > 0 ? i-(WINDOW_SIZE-j) : i-j)
+							.append(i < WINDOW_SIZE ? i-j : WINDOW_SIZE-j)
 							.append(middle)
 							.append(next.length())
 							.append(middle)
@@ -63,6 +65,7 @@ public class LempelZiv {
 			}
 		}
 
+
 		return res.toString();
 	}
 
@@ -78,8 +81,8 @@ public class LempelZiv {
 				res.append(compressed.charAt(i));
 			} else {
 
-				int ind1 = i + compressed.substring(i).indexOf(middle),
-					ind2 = ind1 + 1 + compressed.substring(ind1+1).indexOf(middle),
+				int ind1 = compressed.indexOf(middle, i),
+					ind2 = compressed.indexOf(middle, ind1+1),
 					offset = Integer.parseInt(compressed.substring(i+1,ind1)),
 					length = Integer.parseInt(compressed.substring(ind1+1, ind2));
 				char next = compressed.charAt(ind2+1);

@@ -1,4 +1,5 @@
 import java.util.HashMap;
+import java.util.Map;
 import java.util.PriorityQueue;
 
 /**
@@ -21,7 +22,7 @@ public class HuffmanCoding {
 			if (!frequencies.containsKey(c)) {
 				frequencies.put(c, 1);
 			} else {
-				frequencies.put(c, frequencies.get(c) + 1);
+				frequencies.replace(c, frequencies.get(c) + 1);
 			}
 		}
 
@@ -31,7 +32,6 @@ public class HuffmanCoding {
 
 		while (queue.size() > 1) {
 			Node a = queue.poll(), b = queue.poll();
-
 			BranchNode c = new BranchNode(a, b);
 			queue.add(c);
 		}
@@ -52,6 +52,13 @@ public class HuffmanCoding {
 			code.append(root.encode(c));
 		}
 
+//		String decoded = decode(code.toString());
+//		for (int i = 0; i < text.length(); ++i) {
+//			if (text.charAt(i) == decoded.charAt(i)) {
+//				System.err.println("characters match!: " + text.charAt(i) + ", " + decoded.charAt(i));
+//			}
+//		}
+
 		return code.toString();
 	}
 
@@ -60,14 +67,7 @@ public class HuffmanCoding {
 	 * and return the decoded text as a text string.
 	 */
 	public String decode(String encoded) {
-		StringBuilder decoded = new StringBuilder();
-		StringBuilder compressed = new StringBuilder(encoded);
-
-		while (!compressed.toString().equals("")) {
-			decoded.append(root.decode(compressed));
-		}
-
-		return decoded.toString();
+		return root.decode(encoded);
 	}
 
 	/**
@@ -85,19 +85,58 @@ public class HuffmanCoding {
 		return root.toString();
 	}
 
+
 	private abstract static class Node implements Comparable<Node>{
 		int frequency;
 		String code;
+		protected static int index = 0;
 
 		@Override
 		public int compareTo(Node o) {
 			return Integer.compare(frequency, o.frequency);
 		}
 
+		public String decode(String encoded) {
+			index = 0;
+			StringBuilder res = new StringBuilder();
+			while (index < encoded.length()) {
+				res.append(decodeChar(encoded));
+			}
+			return res.toString();
+		}
+
+		public String debugDecode(String encoded, String decoded) {
+			index = 0;
+			StringBuilder res = new StringBuilder();
+			int i = 0;
+			String code;
+			char parsedCode;
+
+			while (index < encoded.length()) {
+				code = encode(decoded.charAt(i));
+				assert code.equals(encoded.substring(index, index + code.length()));
+				parsedCode = decodeChar(encoded);
+				assert code.equals(encode(parsedCode));
+				assert parsedCode == decoded.charAt(i);
+
+				res.append(parsedCode);
+
+				if (!res.toString().equals(decoded.substring(0,++i))) {
+					if (res.toString().length() != decoded.substring(0,i).length()) {
+						System.err.println("diff sizes!");
+					}
+
+					System.out.println("Does not equal:\n'" + res + "'\n'" + decoded.substring(0,i) + "'");
+					return "";
+				}
+			}
+			return res.toString();
+		}
+
 		public abstract void assignCode(String code);
 		public abstract String encode(char c);
-		public abstract char decode(StringBuilder encoded);
 		public abstract boolean contains(char c);
+		protected abstract char decodeChar(String encoded);
 
 		@Override
 		public abstract String toString();
@@ -132,13 +171,12 @@ public class HuffmanCoding {
 		}
 
 		@Override
-		public char decode(StringBuilder encoded) {
-			char code = encoded.charAt(0);
-			encoded.deleteCharAt(0);
+		public char decodeChar(String encoded) {
+			char code = encoded.charAt(index++);
 			if (code == '1') {
-				return left.decode(encoded);
+				return left.decodeChar(encoded);
 			} else {
-				return right.decode(encoded);
+				return right.decodeChar(encoded);
 			}
 		}
 
@@ -149,9 +187,8 @@ public class HuffmanCoding {
 
 		@Override
 		public String toString() {
-			return left.toString() + "\n" + right.toString();
+			return left.toString() + '\n' + right.toString();
 		}
-
 	}
 
 	private static class Leaf extends Node {
@@ -175,7 +212,7 @@ public class HuffmanCoding {
 		}
 
 		@Override
-		public char decode(StringBuilder encoded) {
+		public char decodeChar(String encoded) {
 			return data;
 		}
 
@@ -185,7 +222,8 @@ public class HuffmanCoding {
 		}
 
 		@Override
-		public String toString() { return code + ": '" + data + "'"; }
+		public String toString() { return code + ":" + " '" + data + "'"; }
+
 
 	}
 
